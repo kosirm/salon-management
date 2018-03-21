@@ -1,0 +1,397 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="my-icons.html">
+
+<!-- lazy import views -->
+<link rel="lazy-import" href="views/agenda-view/agenda-view.html">
+<link rel="lazy-import" href="views/asociados-view/asociados-view.html">
+<link rel="lazy-import" href="views/servicios-view/servicios-view.html">
+<link rel="lazy-import" href="views/error-view.html">
+
+<!-- lazy import dialogs -->
+<link rel="lazy-import" href="dialogs/create-service-dialog.html">
+
+<!-- extra imports -->
+<link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/moment-element/moment-element.html">
+<link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/neon-animation/web-animations.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+
+
+
+
+
+<dom-module id="my-app">
+  <template>
+    <style>
+      :host {
+        --app-primary-color: #00BCD4;
+        --app-secondary-color: black;
+        --lulu-mothe-purple: #D83DBA;
+
+        display: block;
+      }
+
+      app-drawer-layout:not([narrow]) [drawer-toggle] {
+        display: none;
+      }
+
+      app-header {
+        color: #fff;
+        background-color: var(--app-primary-color);
+      }
+
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+
+      paper-menu-button {
+       padding: 0;
+      }
+
+      .drawer-list {
+        margin: 0 20px;
+      }
+
+      .drawer-list a {
+        display: block;
+        padding: 0 16px;
+        text-decoration: none;
+        color: var(--app-secondary-color);
+        line-height: 40px;
+      }
+
+      .drawer-list a.iron-selected {
+        color: var(--lulu-mothe-purple);
+        font-weight: bold;
+      }
+
+      .weekday {
+        font-size: 12px;
+      }
+
+      .date-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .toolbar-date {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        padding: 0 16px;
+      }
+
+      .rc-logos {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .pending-listbox {
+        padding: 0;
+      }
+
+      .single-pending-appt {
+        font-size: 14px;
+        height: 64px;
+        border-bottom: 1px solid #ccc;
+      }
+
+      .single-pending-appt:last-of-type {
+        border-bottom: none;
+      }
+
+      paper-fab {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+      }
+
+    </style>
+
+    <!-- <firebase-app
+      auth-domain="salon-dev-server.firebaseapp.com"
+      database-url="https://salon-dev-server.firebaseio.com"
+      api-key="AIzaSyAr5cjpG7MH-zOAos8fgBVMlvJn7Q3TpxI"
+      storage-bucket="salon-dev-server.appspot.com"
+      messaging-sender-id="165378409100">
+    </firebase-app> -->
+
+    <firebase-app
+      auth-domain="salon-bot-7eacc.firebaseapp.com"
+      database-url="https://salon-bot-7eacc.firebaseio.com"
+      api-key="AIzaSyBHU3AL0ykDXGCD-cKaIYPQ0TfRnP9YQIU"
+      storage-bucket="salon-bot-7eacc.appspot.com"
+      messaging-sender-id="514905054269">
+    </firebase-app>
+
+    <moment-element datetime={{datetime}} hidden="true" output-format="M-D-YYYY" output="{{currentDate}}"></moment-element>
+
+    <app-location
+        route="{{route}}"
+        url-space-regex="^[[rootPath]]">
+    </app-location>
+
+    <app-route
+        route="{{route}}"
+        pattern="[[rootPath]]:page"
+        data="{{routeData}}"
+        tail="{{subroute}}">
+    </app-route>
+
+    <app-drawer-layout fullbleed narrow="{{narrow}}">
+      <!-- Drawer content -->
+      <app-drawer id="drawer" slot="drawer" swipe-open opened={{drawerOpen}}>
+        <app-toolbar>Menu</app-toolbar>
+        <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+          <a name="agenda" href="[[rootPath]]agenda">Agenda</a>
+          <a name="asociados" href="[[rootPath]]asociados">Asociados</a>
+          <a name="servicios" href="[[rootPath]]servicios">Servicios</a>
+        </iron-selector>
+      </app-drawer>
+
+      <!-- Main content -->
+      <app-header-layout has-scrolling-region>
+
+        <app-header slot="header" condenses reveals effects="waterfall">
+          <app-toolbar>
+              <paper-icon-button icon="my-icons:menu" drawer-toggle></paper-icon-button>
+              <div class=date-container>
+                <paper-icon-button hidden={{_isAgendaPage(page)}} icon="my-icons:chevron-left" on-click="_onDateLeftChevronClick"></paper-icon-button>
+                <div class=toolbar-date>
+                  <div on-click="_resetDate">{{_computeCurrentDate(currentDate, page)}}</div>
+                  <div class$={{_computeDateVisibility(page)}} on-click="_resetDate">{{_computeCurrentWeekday(currentDate)}}</div>
+                </div>
+                <paper-icon-button hidden={{_isAgendaPage(page)}} icon="my-icons:chevron-right" on-click="_onDateRightChevronClick"></paper-icon-button>
+              </div>
+            
+              <div class=rc-logos>
+                <div class$={{_computeIsHidden(accountType)}}>
+                  <paper-menu-button vertical-align=bottom dynamic-align close-on-activate no-overlap>
+                    <paper-icon-button icon="my-icons:calendar" aria-label$="Citas pendientes: [[_computePluralizedQuantity(pendingAppts.length)]]" slot="dropdown-trigger"></paper-icon-button>
+                      <paper-listbox on-iron-activate="_onPendingAppointmentSelected" selected-class=null class=pending-listbox slot="dropdown-content">
+                        <template is="dom-repeat" items={{pendingAppts}} as=appt>
+                          <paper-item class=single-pending-appt>Servicio: {{appt.service}}<br>Hora: {{appt.time}}</paper-item>
+                        </template>
+                      </paper-listbox>
+                  </paper-menu-button>
+                  <template is="dom-if" if=[[pendingAppts.length]]>
+                    <div class="cart-badge" aria-hidden="true">[[pendingAppts.length]]</div>
+                  </template>                
+                </div>
+              </div>
+          </app-toolbar>
+        </app-header>
+
+        <iron-pages
+            selected="[[page]]"
+            attr-for-selected="name"
+            fallback-selection="error"
+            role="main">
+          <agenda-view name="agenda" date={{currentDate}}></agenda-view>
+          <asociados-view name="asociados"></asociados-view>
+          <servicios-view name="servicios"></servicios-view>
+          <error-view name="error"></error-view>
+        </iron-pages>
+      </app-header-layout>
+    </app-drawer-layout>
+
+    <template is="dom-if" if={{!drawerOpen}}>
+      <paper-fab icon="my-icons:add" on-click="_onFabClick"></paper-fab>
+    </template>
+
+    <create-service-dialog id=createServiceDialog></create-service-dialog>
+
+  </template>
+
+  <script src="../bower_components/moment/min/moment-with-locales.js"></script>
+
+  <script>
+    // Gesture events like tap and track generated from touch will not be
+    // preventable, allowing for better scrolling performance.
+    Polymer.setPassiveTouchGestures(true);
+
+    class MyApp extends Polymer.Element {
+      static get is() { return 'my-app'; }
+
+      static get properties() {
+        return {
+          page: {
+            type: String,
+            reflectToAttribute: true,
+            observer: '_pageChanged',
+          },
+          routeData: Object,
+          subroute: Object,
+          // This shouldn't be neccessary, but the Analyzer isn't picking up
+          // Polymer.Element#rootPath
+          rootPath: String,
+          accountType: String
+        };
+      }
+
+      static get observers() {
+        return [
+          '_routePageChanged(routeData.page)',
+        ];
+      }
+
+      _routePageChanged(page) {
+        // If no page was found in the route data, page will be an empty string.
+        // Default to 'view1' in that case.
+        this.page = page || 'agenda';
+
+        // Close a non-persistent drawer when the page & route are changed.
+        if (!this.$.drawer.persistent) {
+          this.$.drawer.close();
+        }
+      }
+
+      _pageChanged(page) {
+        // Load page import on demand. Show 404 page if fails
+        const resolvedPageUrl = this.resolveUrl(`views/${page}-view/${page}-view.html`);
+        Polymer.importHref(
+            resolvedPageUrl,
+            null,
+            this._showPage404.bind(this),
+            true);
+      }
+
+      _showPage404() {
+        this.page = 'error';
+      }
+
+      _isAgendaPage(page) {
+        if (page != 'agenda') return true;
+      }
+
+      _computeDateVisibility(page) {
+        var dateClass = 'weekday';
+        if(page != 'agenda') dateClass +=  ' hidden';
+        return dateClass;
+      }
+
+      _computeIsHidden(accountType) {
+        if (accountType != 'admin') return 'hidden';
+      }
+
+      _computeCurrentDate(currentDate, page) {
+          if (page == 'asociados') {
+            return 'Asociados'
+          } 
+          
+          if (page == 'servicios') {
+            return 'Servicios'
+          } 
+
+          let formattedDate = moment(currentDate, "M-D-YYYY").locale("es").format("MMM D");
+          return formattedDate;
+      }
+
+      _computeCurrentWeekday(currentDate) {
+          let formattedDate = moment(currentDate, "M-D-YYYY").locale("es").format("dddd");
+          return formattedDate;
+      }
+
+      _onDateLeftChevronClick(e) {
+        let curDate = moment(this.datetime);
+        let shiftedDate = curDate.subtract(1, 'd');
+        this.datetime = curDate;
+      }
+      _onDateRightChevronClick(e) {
+        let curDate = moment(this.datetime);
+        let shiftedDate = curDate.add(1, 'd');
+        this.datetime = curDate;
+      }
+
+      _resetDate(e) {
+        this.datetime = moment();
+      }
+
+      _computePluralizedQuantity(quantity) {
+        return quantity + ' ' + (quantity === 1 ? 'appointment' : 'appointments');
+      }
+
+      _onFabClick(e) {
+        var resolvedDialogUrl;
+        switch (this.page) {
+          case 'agenda':
+            // Load dialog import on demand. Show toast if fails
+            resolvedDialogUrl = this.resolveUrl('dialogs/create-appointment-dialog.html');
+            Polymer.importHref(
+              resolvedDialogUrl,
+              this._openCreateApptDialog(),
+              null,
+              true);
+            break;
+          case 'asociados':
+            // Load dialog import on demand. Show toast if fails
+            resolvedDialogUrl = this.resolveUrl('dialogs/create-associate-dialog.html');
+            Polymer.importHref(
+              resolvedDialogUrl,
+              this._openCreateAssociateDialog(),
+              null,
+              true);
+            break;
+          case 'servicios':
+            // Load dialog import on demand. Show toast if fails
+            resolvedDialogUrl = this.resolveUrl('dialogs/create-service-dialog.html');
+            Polymer.importHref(
+              resolvedDialogUrl,
+              this._openCreateServiceDialog(),
+              null,
+              true);
+            break;
+        
+          default:
+            break;
+        }
+      }
+
+      _openCreateApptDialog() {
+        this.$.createAppointmentDialog.date = null;
+        this.$.createAppointmentDialog.date = this.currentDate;
+        this.$.createAppointmentDialog.open();
+      }
+
+      _openCreateAssociateDialog() {
+        this.$.addEmployeeDialog.open();
+      }
+
+      _openCreateServiceDialog() {
+        this.$.createServiceDialog.opened = true;
+      }
+    }
+
+    window.customElements.define(MyApp.is, MyApp);
+  </script>
+</dom-module>

@@ -1,0 +1,80 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="single-appointment">
+    <template>
+        <style>
+            :host {
+                width: calc(100% - 4px);
+                font-size: small;
+                line-height: 10px;
+                border-radius: 5px;
+                color: white; 
+
+                box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+                
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+
+        </style>
+
+        <div>{{service}}</div>
+
+    </template>
+
+    <script>
+        /**
+         * `single-appointment` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class SingleAppointment extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'single-appointment';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                   customer: String,
+                   service: String,
+                   time: String,
+                   date: String, 
+                };
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+        }
+
+        window.customElements.define(SingleAppointment.is, SingleAppointment);
+    </script>
+</dom-module>

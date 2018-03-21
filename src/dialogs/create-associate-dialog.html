@@ -1,0 +1,402 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
+
+<!-- <link rel="import" href="../../bower_components/gold-phone-input/gold-phone-input.html"> -->
+<!-- <link rel="import" href="../../bower_components/d2l-checkbox/d2l-checkbox.html"> -->
+<!-- <link rel="import" href="../../bower_components/iron-image/iron-image.html"> -->
+
+
+
+<dom-module id="create-associate-dialog">
+    <template>
+        <style>
+            :host {
+                display: block
+            }
+            
+
+            #dialog {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                width: 420px;
+                position: fixed;
+                top: 0;
+                right: 0;
+                margin: 0;
+            }
+
+            paper-dialog-scrollable {
+                flex: 1;
+                margin-top: 0;
+                --paper-dialog-scrollable: {
+                    padding: 0;
+                }
+            }
+
+            .title {
+                font-size: 20px;
+                text-align: center;
+                padding: 24px;
+                margin: 0;
+
+                text-align: start;
+                flex: 1;
+            }
+
+            .main-toolbar paper-button {
+                font-size: 14px;
+            }
+
+            .main-toolbar {
+                margin-top: 0;
+                padding: 0 16px;
+                background-color: var(--app-primary-color);
+                color: whitesmoke;
+
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+            }
+
+            .image-container {
+                margin-top: 8px;
+                height: 280px;
+                width: 100%;
+                background-color: #ccc;
+            }
+
+            .input-container, .services-container, .schedule-container {
+                padding: 16px 16px;
+            }
+
+            .services-container, .schedule-container {
+                border-top: 1px solid #ccc;
+            }
+
+            .services-title {
+                margin: 8px 0 24px;
+            }
+
+            .single-service {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                align-items: center;
+            }
+
+            .delete-btn {
+                background-color: red;
+                color: whitesmoke;
+            }
+
+            paper-fab {
+                position: relative;
+                left: 80%;
+                top: -35px;
+            }
+
+            .image {
+                height: 100%;
+                width: 100%;
+                object-fit: cover;
+            }
+
+            /* small screen */
+            @media (max-width: 560px) {
+                #dialog {
+                    width: auto;
+                    position: fixed;
+                    top: 0;
+                    right: 0;
+                    left: 0;
+                    margin: 0;
+                }
+
+                .main-toolbar {
+                    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);        
+                }
+
+                .image-container {
+                    height: 67vw;
+                }
+
+                paper-fab {
+                    left: calc(100% - 72px);
+                }
+                
+                .date-time-container {
+                    align-self: flex-start;
+                    flex: 1;
+                }
+                .data {
+                    margin-bottom: 16px;
+                }
+
+                .title {
+                    text-align: start;
+                }
+            }
+        </style>
+
+        <input type="file" accept="image/*" on-change="_onImageUploaded" id="fileInput">
+        <firebase-query path="mothe/services" data={{servicesData}}></firebase-query>
+        <paper-dialog modal id=dialog>
+            
+            
+            <app-toolbar class=main-toolbar>
+                <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
+                <div class=title>Crear asociado</div>
+                <paper-button disabled={{waiting}} on-click="_onSubmitEmployeeClick">Guardar</paper-button>
+            </app-toolbar>
+            
+            <paper-dialog-scrollable>
+                <div class=image-container>
+                        <img class=image src="{{image}}"></img>
+                        <paper-fab icon="my-icons:camera" on-click="_onCameraFabClick"></paper-fab>
+                </div>
+                <div class="input-container">
+                    <paper-input label="Nombre" value={{firstName}}></paper-input>
+                    <paper-input label="Apellido" value={{lastName}}></paper-input>
+                    <paper-input label="Correo electronico" value={{email}}></paper-input>
+                    <!-- <gold-phone-input label=Telefono country-code="52" value={{phone}} maxlength=12></gold-phone-input> -->
+                </div>
+
+                <div class=services-container>
+
+                    
+                    <div class=services-title>Servicios</div>
+                    
+                    <template is="dom-repeat" items={{servicesData}} 
+                    as=service>
+                        <div class=single-service>{{service.name}}<d2l-checkbox on-change="_onServiceChange" checked={{_computeServiceData(services.*,service.name)}}></d2l-checkbox></div>
+                    </template>
+                </div>
+
+                <div class=schedule-container>
+
+                    <div class=services-title>Horas</div>
+                    
+                    <div class=single-service>Lunes<d2l-checkbox checked={{schedule.lunes}}></d2l-checkbox></div>
+                    <div class=single-service>Martes<d2l-checkbox checked={{schedule.martes}}></d2l-checkbox></div>
+                    <div class=single-service>Miercoles<d2l-checkbox checked={{schedule.miercoles}}></d2l-checkbox></div>
+                    <div class=single-service>Jueves<d2l-checkbox checked={{schedule.jueves}}></d2l-checkbox></div>
+                    <div class=single-service>Viernes<d2l-checkbox checked={{schedule.viernes}}></d2l-checkbox></div>
+                    <div class=single-service>Sabado<d2l-checkbox checked={{schedule.sabado}}></d2l-checkbox></div>
+                    <div class=single-service>Domingo<d2l-checkbox checked={{schedule.domingo}}></d2l-checkbox></div>
+                </div>
+            </paper-dialog-scrollable>
+        </paper-dialog>
+
+        <paper-toast class=fit-bottom id="toast"></paper-toast>
+
+    </template>
+
+    <script>
+        /**
+         * `add-employee-dialog` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class CreateAssociateDialog extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'create-associate-dialog';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    services: {
+                        type: Object,
+                        value: {},
+                        notify: true
+                    },
+                    schedule: {
+                        type: Object,
+                        value: {},
+                        notify: true
+                    },
+                    firstName: String,
+                    lastName: String,
+                    phone: String,
+                    image: String,
+                    email: String,
+                    imageFile: Object,
+                    waiting: {
+                        type: Boolean,
+                        value: false
+                    }
+                };
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            static get observers() {
+                return [
+                ];
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    this.$.toast.fitInto = this.$.dialog
+                    ;
+                });
+            }
+
+            open() {
+                this.$.dialog.open();
+            }
+
+            _checkNullInputs() {
+                console.log(this.services);
+                console.log(this.schedule);
+                
+                if (!this.image) {
+                    this.$.toast.text = 'Por favor suba una imagen del empleado.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!this.firstName) {
+                    this.$.toast.text = 'Por favor escriba el nombre del empleado.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!this.lastName) {
+                    this.$.toast.text = 'Por favor escriba el apellido del empleado.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!this.phone) {
+                    this.$.toast.text = 'Por favor escriba un telefono.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!this.email) {
+                    this.$.toast.text = 'Por favor escriba un correo electronico.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!Object.keys(this.services).length) {
+                    this.$.toast.text = 'Por favor escoja un servicio.';
+                    this.$.toast.open();
+                    return true;
+                } else if (!Object.keys(this.schedule).length) {
+                    this.$.toast.text = 'Por favor llene el horario.';
+                    this.$.toast.open();
+                    return true;
+                }
+                return false;
+            }
+
+            _onSubmitEmployeeClick(e) {
+                this.waiting = true;
+
+                if (this._checkNullInputs()) {
+                    this.waiting = false;
+                    return;
+                    
+                }
+
+                let displayName = `${this.firstName} ${this.lastName}`
+                let trimmedEmail = (this.email).trim();
+
+                var employeeObject = {
+                    firstName: this.firstName,
+                    lastName: this.lastName,
+                    displayName: displayName,
+                    services: this.services,
+                    schedule: this.schedule,
+                    phone: this.phone,
+                    email: trimmedEmail
+                }
+                
+                
+                var createEmployeeEvent = new CustomEvent('create-employee', {detail: {employee: employeeObject, image: this.imageFile}})
+                // Dispatch the event.
+                this.dispatchEvent(createEmployeeEvent);
+                this.waiting = false;
+                this.cancelDialog();
+            }
+
+            _resetInputs() {
+                this.firstName = null;
+                this.lastName = null;
+                this.services = {};
+                this.schedule = {};
+                this.phone = null;
+                this.email = null;
+                this.image = null;
+                this.imageFile = null;
+            }
+
+            cancelDialog() {
+                this._resetInputs();
+                this.$.dialog.close();
+            }
+
+            _onCameraFabClick(e) {
+                this.$.fileInput.click();
+            }
+
+            _onImageUploaded(e) {
+                let file = null;
+                let fileList = e.target.files;
+                for (let i = 0; i < fileList.length; i++) {
+                    if (fileList[i].type.match(/^image\//)) {
+                        file = fileList[i];
+                        break;
+                    }
+                }
+
+                if (file !== null) {
+                    let url = URL.createObjectURL(file);
+                    this.image = url;
+                    this.imageFile = file;
+                }
+            }
+
+
+            _computeServiceData(servicesChange, name) {
+                if (!servicesChange.base) {
+                    return;
+                }
+                return servicesChange.base[name];
+            }
+
+            _onServiceChange(e) {
+                this.services[e.model.service.name] = e.returnValue;
+            }
+
+        }
+
+        window.customElements.define(CreateAssociateDialog.is, CreateAssociateDialog);
+    </script>
+</dom-module>

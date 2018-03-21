@@ -1,0 +1,157 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="single-employee-agenda.html">
+
+<dom-module id="agenda-view">
+    <template>
+        <style>
+            :host {
+                display: flex;
+                margin-top: 8px;
+            }
+
+            .time-headers {
+                display: flex;
+                flex-direction: column;
+                padding-top: 72px;
+                width: 40px;
+                border-right: 1px solid #ccc;
+                font-size: 14px;
+            }
+
+            .time-headers div {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                height: 60px;
+                padding-right: 4px;
+                color: rgb(117, 117, 117);
+                text-align: end;
+            }
+
+            .view-all-content {
+                display: flex;
+                overflow-x: auto;
+                flex: 1;
+            }
+
+            single-employee-agenda {
+                border-right: 1px solid #ccc;
+                flex: 1;
+                min-width: 72px;
+            }
+
+            single-employee-agenda::-webkit-scrollbar {
+                display: none;
+            }
+            
+        </style>
+
+        <firebase-query
+            path="/mothe/employees"
+            data="{{employees}}"></firebase-query>
+
+        <div on-click="_onTimeHeadersTap" class=time-headers>
+            <div name="8:00 AM">8<br>AM</br></div>
+            <div name="9:00 AM">9</div>
+            <div name="10:00 AM">10</div>
+            <div name="11:00 AM">11</div>
+            <div name="12:00 PM">12<br>PM</br></div>
+            <div name="1:00 PM">1</div>
+            <div name="2:00 PM">2</div>
+            <div name="3:00 PM">3</div>
+            <div name="4:00 PM">4</div>
+            <div name="5:00 PM">5</div>
+            <div name="6:00 PM">6</div>
+            <div name="7:00 PM">7</div>
+            <div name="8:00 PM">8</div>
+            <div name="9:00 PM">9</div>
+            <div name="10:00 PM">10</div>
+        </div>
+
+        <div class=view-all-content>
+            <template is="dom-repeat" items={{employees}} as=employee>
+                <single-employee-agenda employee={{employee}} date={{date}}></single-employee-agenda>
+            </template>
+        </div>
+
+
+    </template>
+
+    <script>
+        
+        class AgendaView extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'agenda-view';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    date: {
+                        type: String,
+                        notify: true
+                    }
+                };
+            }
+
+            static get observers() {
+                return [
+                '_employeesObserver(employees)',
+                ];
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+            _employeesObserver(employees) {
+                console.log('on employees change:', employees);
+            }
+
+            _onTimeHeadersTap(e) {
+                const attributes = e.target.attributes;
+                var time;
+                for (const attrName in attributes) {
+                    if (attributes.hasOwnProperty(attrName)) {
+                        const attr = attributes[attrName];
+                        if (attr.name == 'name') {    
+                            time = attr.value;
+                        }
+                    }
+                }
+                console.log('on time tap:', time);
+                if (!time) {
+                    time = "8:00 AM";
+                }
+                var openCreateAppointmentDialog = new CustomEvent('time-header-click', {detail: time, bubbles: true, composed: true})
+                // Dispatch the event.
+                this.dispatchEvent(openCreateAppointmentDialog);
+            }
+
+        }
+
+        window.customElements.define(AgendaView.is, AgendaView);
+    </script>
+</dom-module>

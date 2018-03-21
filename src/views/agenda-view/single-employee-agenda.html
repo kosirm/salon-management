@@ -1,0 +1,288 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="single-appointment.html">
+
+<dom-module id="single-employee-agenda">
+    <template>
+        <style>
+            :host {
+                display: flex;
+                width: 100;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .circle {
+                display: inline-block;
+                width: 40px;
+                height: 40px;
+                text-align: center;
+                color: #555;
+                border-radius: 50%;
+                background: #ddd;
+                font-size: 30px;
+                line-height: 64px;
+                margin: 16px;
+                object-fit: cover;
+            }
+
+            .employee-details-container {
+                width: 100%;
+                height: 72px;
+                display: flex;
+                align-items: center;
+                text-align: center;
+                font-size: 12px;
+            }
+
+            .time-headers {
+                width: 100%;
+                flex: 1;
+                display: flex;
+                height: 900px;
+                flex-direction: column;
+                background-image: repeating-linear-gradient(0deg,transparent,transparent 29px,#CCC 29px,#CCC 30px);
+                background-size: 100% 30px;
+                align-items: center;
+            }
+
+            /* small screen */
+            @media (max-width: 1100px) {
+                .employee-details-container {
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+
+                .name-container {
+                    align-items: center;
+                    white-space: nowrap;
+                }
+
+                .circle {
+                    margin: 6px;
+                }
+
+                .last-name {
+                    display: none;
+                }
+
+            }
+        </style>
+
+        <div class=employee-details-container>
+            <img class=circle></img>
+            <div class=name-container>
+                <div>{{employee.firstName}}</div>
+                <div class=last-name>{{employee.lastName}}</div>
+            </div>
+        </div>
+
+        <div class=time-headers id="apptContainer"></div>
+
+    </template>
+
+    <script>
+        class SingleEmployeeAgenda extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'single-employee-agenda';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    employee: {
+                        type: Object
+                    },
+                    date: String,
+                    counter: {
+                        type: Number,
+                        value: 0
+                    },
+                    largeCounter: {
+                        type: Number,
+                        value: 0
+                    }
+                };
+            }
+
+            static get observers() {
+                return [
+                '_employeeObserver(employee.*)',
+                '_dateObserver(date)',
+                ];
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+            _onApptClick(e) {
+                const attributes = e.target.attributes;
+                var appointmentObject = {};
+                for (const attrName in attributes) {
+                    if (attributes.hasOwnProperty(attrName)) {
+                        const attr = attributes[attrName];
+                        if (attr.name != 'style') {    
+                            appointmentObject[attr.name] = attr.value;
+                        }
+                    }
+                }
+                                
+                var openApptDetails = new CustomEvent('appt-click', {detail: appointmentObject, bubbles: true, composed: true})
+                // Dispatch the event.
+                this.dispatchEvent(openApptDetails);
+            }
+
+            _onAppointmentDeleted(data) {
+                if (this.counter != 0) {
+                    var range = document.createRange();
+                    range.selectNodeContents(this.$.apptContainer);
+                    range.deleteContents();
+                    this.counter = 0;
+                    this.largeCounter = 0;
+                }
+                
+                var db = firebase.database();
+                var appointmentsRef = db.ref(`/mothe/appointments/${this.date}/${this.employee.$key}`);
+                
+                appointmentsRef.on('child_added', data => {
+                    this._onAppointmentAdded(data);
+                });
+
+                appointmentsRef.on('child_removed', data => {
+                    this._onAppointmentDeleted(data);
+                });
+
+            }
+
+            _onAppointmentAdded(data) {
+                
+                let key = data.key;
+                let curAppt = data.val();
+                console.log('appt added:', curAppt);
+
+                var d = moment(curAppt.time, 'h:mm A');
+                var minute = d.minute();
+                var hour = d.hour();
+                
+                let apptSelector = `#${key}`;
+                let appt = Polymer.dom(this.root).querySelector(apptSelector);
+                
+                if (!appt) {
+                    let duration = 30;
+                    if (curAppt.duration) duration = (curAppt.duration);
+
+                    let height = this.calcApptHeight(duration);
+                    let top = this.calcApptTop(hour, minute);
+
+                    var apptDiv = document.createElement('single-appointment');
+                    apptDiv.addEventListener('click', this._onApptClick);
+                    apptDiv.setAttribute('id', key);
+                    apptDiv.setAttribute('customer', curAppt.customerName);
+                    apptDiv.setAttribute('service', curAppt.service);
+                    apptDiv.setAttribute('date', curAppt.formattedDate);
+                    apptDiv.setAttribute('time', curAppt.time);
+                    apptDiv.setAttribute('employee', this.employee.$key);
+                    
+                    apptDiv.style.height = `${height}px`;
+                    apptDiv.style.position = "relative";
+                    apptDiv.style.top = `${top}px`;
+
+                    if (curAppt.color) {
+                        apptDiv.style.backgroundColor = curAppt.color;
+                    } else {
+                        apptDiv.style.backgroundColor = '#3b5998';
+                    }
+
+                    Polymer.dom(this.$.apptContainer).appendChild(apptDiv);    
+                    this.counter = this.counter + 1;
+                    if (curAppt.duration == 60) this.largeCounter = this.largeCounter + 1;
+                }
+            }
+
+            calcApptHeight(minute) {
+                let h = Math.round((minute/60) * 60);
+                return (h - 4);
+            }
+
+            calcApptTop(hour, min) {
+                let factor = (hour - 8) * 60; 
+                let offset = Math.round((min/60) * 60);
+
+                let adjustment = (this.counter * 30) + (this.largeCounter * 30);
+                let marginAdjustment = (4 * this.counter) + 2;
+
+                return ((offset + factor) - adjustment + marginAdjustment);
+            }
+
+            _employeeObserver(employee) {
+                console.log('on employee change:', employee);
+                
+                if (this.counter != 0) {
+                    var range = document.createRange();
+                    range.selectNodeContents(this.$.apptContainer);
+                    range.deleteContents();
+                    this.counter = 0;
+                    this.largeCounter = 0;
+                }
+                
+                var db = firebase.database();
+                var appointmentsRef = db.ref(`/mothe/appointments/${this.date}/${employee.value.$key}`);
+                
+                appointmentsRef.on('child_added', data => {
+                    this._onAppointmentAdded(data);
+                });
+
+                appointmentsRef.on('child_removed', data => {
+                    this._onAppointmentDeleted(data);
+                });
+            }
+
+            _dateObserver(date) {
+                console.log('on date change:', date);
+                
+                if (this.counter != 0) {
+                    var range = document.createRange();
+                    range.selectNodeContents(this.$.apptContainer);
+                    range.deleteContents();
+                    this.counter = 0;
+                    this.largeCounter = 0;
+                }
+                
+                var db = firebase.database();
+                var appointmentsRef = db.ref(`/mothe/appointments/${date}/${this.employee.$key}`);
+                
+                appointmentsRef.on('child_added', data => {
+                    this._onAppointmentAdded(data);
+                });
+
+                appointmentsRef.on('child_removed', data => {
+                    this._onAppointmentDeleted(data);
+                });
+            }
+
+        }
+
+        window.customElements.define(SingleEmployeeAgenda.is, SingleEmployeeAgenda);
+    </script>
+</dom-module>
