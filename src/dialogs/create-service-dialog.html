@@ -9,10 +9,11 @@
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
-<!-- <link rel="import" href="../../bower_components/d2l-checkbox/d2l-checkbox.html"> -->
 <link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/paper-swatch-picker/paper-swatch-picker.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+
 
 
 <dom-module id="create-service-dialog">
@@ -198,7 +199,7 @@
                         <template id=employeesArray is="dom-repeat" items={{employees}} 
                             as=employee>
                             
-                            <!-- <div class=single-employee>{{employee.displayName}}<d2l-checkbox id$={{employee.$key}}></d2l-checkbox></div> -->
+                            <div class=single-employee>{{employee.displayName}}<paper-toggle-button id$={{employee.$key}}></paper-toggle-button></div>
                             
                         </template>
                         
@@ -322,8 +323,8 @@
                     let domrItem = this.shadowRoot.querySelector(`#${key}`);
                     
                     let attributes = domrItem.attributes;
-                    let checked = (attributes.length == 4);
-                    
+                    var checked = (attributes.checked != null);
+
                     console.log('key:', key);
                     console.log('value:', checked);
 

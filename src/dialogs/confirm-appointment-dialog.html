@@ -9,20 +9,19 @@
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-document.html">
 <link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
-<!-- <link rel="import" href="../../bower_components/gold-phone-input/gold-phone-input.html"> -->
-
-<dom-module id="create-appointment-dialog">
+<dom-module id="confirm-appointment-dialog">
     <template>
         <style>
             :host {
                 display: block
             }
 
-            #mainDialog {
+            #dialog {
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -30,6 +29,7 @@
                 position: fixed;
                 top: 0;
                 right: 0;
+                bottom: 0;
                 margin: 0;
             }
 
@@ -68,15 +68,6 @@
                 width: 100%;
             }
 
-            .submit-button {
-                color: var(--app-primary-color);
-                background-color: var(--lulu-mothe-purple);
-            }
-
-            .cancel-button {
-                color: red;
-            }
-
             .service-input, .date-time-container {
                 display: flex;
                 align-items: center;
@@ -87,6 +78,7 @@
                 flex: 1;
                 margin: 4px;
             }
+
             .date-time-container div {
                 text-align: center;
                 padding-top: 20px;
@@ -109,10 +101,12 @@
 
             }
 
+            .cancel-button {
+                color: red;
+            }
 
-
-            /* large screen */
-            @media (min-width: 561px) {
+             /* large screen */
+             @media (min-width: 561px) {
                 
                 paper-dropdown-menu {
                     width: 100%;
@@ -121,7 +115,7 @@
             /* small screen */
             @media (max-width: 560px) {
                 
-                #mainDialog {
+                #dialog {
                     width: auto;
                     position: fixed;
                     top: 0;
@@ -129,120 +123,137 @@
                     left: 0;
                     margin: 0;
                 }
-
             }
 
             /* small screen */
-            @media (min-height: 566px) {
-                #mainDialog {
-                    bottom: 0;
-                }
-            }
+            @media (max-height: 565px) {
+                paper-textarea {
 
-            
+                    --paper-input-container: {
+                        border: 1px solid #ccc;
+                        border-radius: 5px;
+                        padding: 8px;
+                        height: 80px;
+                    }
+
+                }   
+                
+
+            }
         </style>
-        
+
         <firebase-query
-        id="query"
         path="/mothe/employees"
         data="{{employees}}">
         </firebase-query>
 
-        <firebase-query
-        id="query"
-        path="/mothe/services"
-        data="{{services}}">
-        </firebase-query>
+        <firebase-document
+        id=doc
+        path="/mothe/pendingAppointments/{{aid}}"
+        data="{{appointment}}">
+        </firebase-document>
 
-        <paper-dialog id=mainDialog modal opened={{opened}}>
-            <app-toolbar class=main-toolbar>
-                <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
-                <div class=title>Crear cita</div>
-                <paper-button on-click="_onSubmitAppointmentClick">Guardar</paper-button>
-            </app-toolbar>
-    
-            <paper-dialog-scrollable>
+        <paper-dialog id=dialog opened={{opened}}>
+        <app-toolbar class=main-toolbar>
+            <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
+            <div class=title>Confirmar cita</div>
+            <paper-button on-click="_onInitialConfirmAppointmentClick">confirmar</paper-button>
+        </app-toolbar>
 
-                <div class="date-time-container">
-                    <paper-dropdown-menu label=Date dynamic-align>
-                        <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{date}}>
-                            <paper-item name$={{date}}>{{date}}</paper-item>
-                        </paper-listbox>
-                    </paper-dropdown-menu>
-                    <paper-dropdown-menu label=Hora dynamic-align>
-                        <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{time}}>
-                            <paper-item name="8:00 AM">8:00a</paper-item>
-                            <paper-item name="8:30 AM">8:30a</paper-item>
-                            <paper-item name="9:00 AM">9:00a</paper-item>
-                            <paper-item name="9:30 AM">9:30a</paper-item>
-                            <paper-item name="10:00 AM">10:00a</paper-item>
-                            <paper-item name="10:30 AM">10:30a</paper-item>
-                            <paper-item name="11:00 AM">11:00a</paper-item>
-                            <paper-item name="11:30 AM">11:30a</paper-item>
-                            <paper-item name="12:00 PM">12:00p</paper-item>
-                            <paper-item name="12:30 PM">12:30p</paper-item>
-                            <paper-item name="1:00 PM">1:00p</paper-item>
-                            <paper-item name="1:30 PM">1:30p</paper-item>
-                            <paper-item name="2:00 PM">2:00p</paper-item>
-                            <paper-item name="2:30 PM">2:30p</paper-item>
-                            <paper-item name="3:00 PM">3:00p</paper-item>
-                            <paper-item name="3:30 PM">3:30p</paper-item>
-                            <paper-item name="4:00 PM">4:00p</paper-item>
-                            <paper-item name="4:30 PM">4:30p</paper-item>
-                            <paper-item name="5:00 PM">5:00p</paper-item>
-                            <paper-item name="5:30 PM">5:30p</paper-item>
-                            <paper-item name="6:00 PM">6:00p</paper-item>
-                            <paper-item name="6:30 PM">6:30p</paper-item>
-                            <paper-item name="7:00 PM">7:00p</paper-item>
-                            <paper-item name="7:30 PM">7:30p</paper-item>
-                        </paper-listbox>
-                    </paper-dropdown-menu>
-                </div>
-                <paper-input label="Nombre del cliente" value={{customerName}}></paper-input>
-                <!-- <gold-phone-input label=Telefono country-code="52" value={{customerPhone}} maxlength=12></gold-phone-input> -->
-                <paper-dropdown-menu label=Servicio dynamic-align>
-                    <paper-listbox attr-for-selected=name slot="dropdown-content" selected={{selectedService}}> 
-                        <template id=servicesArray is="dom-repeat" items={{services}} 
-                            as=service>
-                            <paper-item id={{service.name}} color$={{service.color}} name$={{service.name}}>{{service.name}}</paper-item>
-                        </template>
+        <paper-dialog-scrollable>
+
+            <div class="date-time-container">
+                <paper-dropdown-menu disabled label=Date dynamic-align>
+                    <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{appointment.formattedDate}}>
+                        <paper-item name$={{appointment.formattedDate}}>{{appointment.formattedDate}}</paper-item>
                     </paper-listbox>
                 </paper-dropdown-menu>
-                <paper-dropdown-menu label=Asociado dynamic-align selected-item-label={{selectedEmployee}}>
-                    <paper-listbox slot="dropdown-content" selected="{{employee}}">
-                        
-                        <template id=employeesDomr is="dom-repeat" items={{employees}} 
-                            as=curEmployee index-as=index>
-                            <paper-item name={{curEmployee.displayName}}>{{curEmployee.displayName}}</paper-item>
-                        </template>
-                    
+                <paper-dropdown-menu label=Hora dynamic-align>
+                    <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{appointment.time}}>
+                        <paper-item name="8:00 AM">8:00a</paper-item>
+                        <paper-item name="8:30 AM">8:30a</paper-item>
+                        <paper-item name="9:00 AM">9:00a</paper-item>
+                        <paper-item name="9:30 AM">9:30a</paper-item>
+                        <paper-item name="10:00 AM">10:00a</paper-item>
+                        <paper-item name="10:30 AM">10:30a</paper-item>
+                        <paper-item name="11:00 AM">11:00a</paper-item>
+                        <paper-item name="11:30 AM">11:30a</paper-item>
+                        <paper-item name="12:00 PM">12:00p</paper-item>
+                        <paper-item name="12:30 PM">12:30p</paper-item>
+                        <paper-item name="1:00 PM">1:00p</paper-item>
+                        <paper-item name="1:30 PM">1:30p</paper-item>
+                        <paper-item name="2:00 PM">2:00p</paper-item>
+                        <paper-item name="2:30 PM">2:30p</paper-item>
+                        <paper-item name="3:00 PM">3:00p</paper-item>
+                        <paper-item name="3:30 PM">3:30p</paper-item>
+                        <paper-item name="4:00 PM">4:00p</paper-item>
+                        <paper-item name="4:30 PM">4:30p</paper-item>
+                        <paper-item name="5:00 PM">5:00p</paper-item>
+                        <paper-item name="5:30 PM">5:30p</paper-item>
+                        <paper-item name="6:00 PM">6:00p</paper-item>
+                        <paper-item name="6:30 PM">6:30p</paper-item>
+                        <paper-item name="7:00 PM">7:00p</paper-item>
+                        <paper-item name="7:30 PM">7:30p</paper-item>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+            </div>
+            <paper-input label="Nombre del cliente" value={{appointment.customerName}}></paper-input>
+            <paper-dropdown-menu disabled label=Servicio dynamic-align>
+                <paper-listbox slot="dropdown-content" attr-for-selected=name selected="{{appointment.service}}">
+                    <paper-item name=cortes>cortes</paper-item>
+                    <paper-item name=maquillaje>maquillaje</paper-item>
+                    <paper-item name=tintes>tintes</paper-item>
+                    <paper-item name=depilacion>depilacion</paper-item>
+                    <paper-item name=peinado>peinado</paper-item>
+                    <paper-item name=pedicure>pedicure</paper-item>
+                    <paper-item name=manicure>manicure</paper-item>
                 </paper-listbox>
             </paper-dropdown-menu>
-            <paper-textarea no-label-float rows=5 label="Notas" value={{notes}}></paper-textarea>
+            <paper-dropdown-menu label=Asociado dynamic-align selected-item={{selectedEmployee}}>
+                <paper-listbox slot="dropdown-content" attr-for-selected=name selected="{{appointment.employeeName}}">
+                    
+                    <template id=employeesDomr is="dom-repeat" items={{employees}} 
+                    as=curEmployee index-as=index>
+                        <paper-item index$={{index}} name$={{curEmployee.displayName}}>{{curEmployee.displayName}}</paper-item>
+                    </template>
+                
+                </paper-listbox>
+            </paper-dropdown-menu>
+        <paper-textarea no-label-float label="Notas" value={{appointment.notes}}></paper-textarea>
         </paper-dialog-scrollable>
-    </paper-dialog>
-    
-    <paper-toast class=fit-bottom id="toast"></paper-toast>
-        
+        </paper-dialog>
 
+        <paper-toast class=fit-bottom id="toast"></paper-toast>
+
+        <paper-dialog id=confirmDialog>
+            <div class=title>CONFIRMAR CITA</div>
+            <div class=text>¿Seguro que deseas confirmar esta cita para la hora de {{appointment.time}}?</div>
+
+            <div class="buttons">
+                <paper-button class=cancel-button on-click="cancelConfirmDialog">Mejor no</paper-button>
+                <paper-button on-click="_onConfirmAppointmentClick">Confirmar</paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-toast class=fit-bottom id="toast"></paper-toast>
 
     </template>
 
     <script>
         /**
-         * `create-appointment-dialog` Description
+         * `confirm-appointment-dialog` Description
          *
          * @summary ShortDescription.
          * @customElement
          * @polymer
          * @extends {Polymer.Element}
          */
-        class CreateAppointmentDialog extends Polymer.Element {
+        class ConfirmAppointmentDialog extends Polymer.Element {
             /**
              * String providing the tag name to register the element under.
              */
             static get is() {
-                return 'create-appointment-dialog';
+                return 'confirm-appointment-dialog';
             }
 
             /**
@@ -250,25 +261,18 @@
              */
             static get properties() {
                 return {
+                    aid: String,
                     opened: {
                         type: Boolean,
                         value: false,
                         notify: true
-                    },
-                    time: {
-                        type: String,
-                        notify: true
-                    },
-                    date: {
-                        type: String,
-                        notify: true,
                     }
                 };
             }
 
             static get observers() {
                 return [
-                '_selectedServiceObserver(selectedService)',
+                '_selectedServiceObserver(appointment.service)',
                 ];
             }
 
@@ -288,48 +292,46 @@
                 super.ready();
 
                 Polymer.RenderStatus.afterNextRender(this, function() {
-                    this.$.toast.fitInto = this.$.mainDialog; 
+                    this.$.toast.fitInto = this.$.dialog; 
                 });
             }
 
-            formatHours(hours) {
-                if (hours == 0) {
-                    return 12;
-                }
-
-                if (hours > 12) {
-                    return (hours - 12);
-                }
-
-                return hours;
+            _selectedServiceObserver(selectedService) {
+                console.log('selected service change:', selectedService);
+                
+                // this.set('appointment.employeeName', null);
+                this.$.employeesDomr.render();
             }
 
-            getPeriod(hours) {
-                if (hours > 12) {
-                    return 'PM';
-                }
-
-                return 'AM';
+            _isServiceOffered(employee) {
+                return employee.services[this.appointment.service];
             }
 
-            getPeriod(hours) {
-                if (hours > 11) {
-                    return 'PM'
-                } else {
-                    return 'AM'
-                }
+            cancelDialog() {
+                this.cancelConfirmDialog();
+                this.opened = false;
+            }
+            cancelConfirmDialog() {
+                this.$.confirmDialog.close();
+            }
+
+            _onInitialConfirmAppointmentClick(e) {
+                this.$.confirmDialog.open();
             }
 
             _validInputs() {
-                if (!this.customerName) {
+                let appt = this.appointment;
+                console.log('checking valid inputs for appt:', appt);
+                
+                if (!appt.customerName) {
                     this.$.toast.text = 'Por favor escriba el nombre.';
                     this.$.toast.open();
                     return false;
-                } else if (!this.selectedService) {
+                } else if (!appt.service) {
                     this.$.toast.text = 'Por favor seleccione un servicio.';
                     this.$.toast.open();
                     return false;
-                } else if (!this.selectedEmployee) {
+                } else if (!appt.employeeName) {
                     this.$.toast.text = 'Por favor seleccione un empleado.';
                     this.$.toast.open();
                     return false;
@@ -340,7 +342,7 @@
             //Check is date is not in the past.
             _validDate(appointmentDate) {
                 let curDate = moment().set({hour:0,minute:0,second:0,millisecond:0});
-                let apptDate = moment(appointmentDate, 'M-D-YYYY').set({hour:0,minute:0,second:0,millisecond:0});
+                let apptDate = moment(appointmentDate, 'M/D/YYYY').set({hour:0,minute:0,second:0,millisecond:0});
                 let diff = apptDate.diff(curDate);
 
                 if (diff < 0) {
@@ -359,7 +361,7 @@
                 let minute = tempApptTime.minute();
                 let hour = tempApptTime.hour();
                 
-                let apptTime = moment(appointmentDate, 'M-D-YYYY').set({hour:hour,minute:minute});
+                let apptTime = moment(appointmentDate, 'M/D/YYYY').set({hour:hour,minute:minute});
 
                 //Check if time is in the past
                 let diff = apptTime.diff(curTime);
@@ -371,12 +373,11 @@
                 };
 
                 if (hour<8) {
-                    console.log('earlier than 8');
+                    console.log('earlier than 8a');
                     this.$.toast.text = 'No se pueden hacer citas antes de las 8a.';
                     this.$.toast.open();
                     return false;
                 }
-
                 if (hour==19 && minute>30) {
                     console.log('its past 7:30');                        
                     this.$.toast.text = 'No se pueden hacer citas despues de las 7:30p.';
@@ -394,42 +395,47 @@
                 return true;
             }
 
-            _onSubmitAppointmentClick(e) {
-                this.waiting = true;
-                console.log('on submit appointment click:', e);
-                
+            _onConfirmAppointmentClick(e) {
+                this.cancelConfirmDialog();
+                console.log('on confirm appointment click:', this.appointment);
+                let curAppt = this.appointment;
                 
                 if (!this._validInputs()) {
                     console.log('invalid inputs, exiting...');
                     return;
                 } 
                 
-                if (!this._validDate(this.date)) {
+                if (!this._validDate(curAppt.formattedDate)) {
                     console.log('invalid date, exiting...');
                     return;
                 }
-                if (!this._validTime(this.time, this.date)) {
+                if (!this._validTime(curAppt.time, curAppt.formattedDate)) {
                     console.log('invalid time, exiting...');
                     return;
                 }
 
-                let curEmployee = this.employees[this.employee];
-                let selectedServiceModel = this._extractModelFromSelectedService(this.selectedService);
-                let duration = parseInt(selectedServiceModel.duration);
+                let employeeIndex = this.selectedEmployee.attributes.index.value;
+                let curEmployee = this.employees[employeeIndex];
 
-                let tempMainApptTime = moment(this.time, 'h:mm A');
+                curAppt["apptId"] = this.aid;
+
+
+                let tempMainApptTime = moment(curAppt.time, 'h:mm A');
                 let mainMinute = tempMainApptTime.minute();
                 let mainHour = tempMainApptTime.hour();
                 
-                var mainApptTime = moment(this.date, 'M-D-YYYY').set({hour:mainHour,minute:mainMinute});
-                var offsetMainApptTime = moment(this.date, 'M-D-YYYY').set({hour:mainHour,minute:mainMinute}).add(duration, 'minutes');
+                var mainApptTime = moment(curAppt.formattedDate, 'M/D/YYYY').set({hour:mainHour,minute:mainMinute});
+                var offsetMainApptTime = moment(curAppt.formattedDate, 'M/D/YYYY').set({hour:mainHour,minute:mainMinute}).add(30, 'minutes');
 
                 console.log('main appt time:', mainApptTime);
                 console.log('offset main appt time:', offsetMainApptTime);
-                
+
                 //Checking for open slots
+                let formattedDate = (curAppt.formattedDate, 'M/D/YYYY').replace(/\//g, '-');
+
                 var db = firebase.database();
-                var appointmentsRef = db.ref(`/mothe/appointments/${this.date}/${curEmployee.$key}`);
+                var appointmentsRef = db.ref(`/mothe/appointments/${formattedDate}/${curEmployee.$key}`);
+                
                 return appointmentsRef.once('value').then(snapshot => {
                     console.log('appointments snapshot:', snapshot.val()); 
                     console.log('exists:', snapshot.exists());
@@ -443,7 +449,7 @@
                         let hour = tempApptTime.hour();
 
                         let apptTime = moment(appt.formattedDate, 'M/D/YYYY').set({hour:hour,minute:minute});
-                        let offsetApptTime = moment(appt.dateMillis).set({hour:hour,minute:minute}).add(duration, 'minutes');
+                        let offsetApptTime = moment(appt.formattedDate, 'M/D/YYYY').set({hour:hour,minute:minute}).add(30, 'minutes');
 
                         console.log('cur appt time:', apptTime);
                         console.log('offset cur appt time:', offsetApptTime);
@@ -468,7 +474,7 @@
                         let rightStartSign = Math.sign(rightStartDiff);
                         let rightEndSign = Math.sign(rightEndDiff);
 
-                        console.log(leftStartSign, leftEndSign, rightStartSign, rightEndSign);
+                        console.log(leftStartSign,leftEndSign, rightStartSign, rightEndSign);
                         
                         if (leftStartDiff <= 0 && leftEndDiff <= 0) {
                             console.log('candidate appt is valid');
@@ -486,37 +492,11 @@
                     
 
                     if (openSlots) {
-                        let color = this._extractColorFromSelectedService(this.selectedService);
-                        let rawDate = moment(this.date, 'M-D-YYYY');
-                        let formattedDate = rawDate.format("M/D/YYYY");
-                        console.log("raw date:", rawDate.valueOf());
-                        console.log("formatted date:", formattedDate);
-
-                        var appointmentObject = {
-                            service: this.selectedService,
-                            dateMillis: rawDate.valueOf(),
-                            formattedDate: formattedDate,
-                            time: this.time,
-                            customerName: this.customerName,
-                            employeeName: curEmployee.displayName,
-                            duration: duration,
-                            color: color,
-                            source: 'dashboard'
-                        }
-
-                        if (this.notes) {
-                            appointmentObject['notes'] = this.notes;
-                        }
-                        if (this.phone) {
-                            appointmentObject['phone'] = this.phone;
-                        }
-
+                        console.log('appointment object:', curAppt);
                         console.log('cur employee:', curEmployee);
-                        console.log('appointment object:', appointmentObject);
-                        var createAppointmentEvent = new CustomEvent('create-appointment', {detail: {employee: curEmployee.$key, date: formattedDate, appointment: appointmentObject}})
+                        var createAppointmentEvent = new CustomEvent('confirm-appointment', {detail: {employee: curEmployee.$key, date: curAppt.formattedDate, appointment: curAppt, aid: this.aid}})
                         // Dispatch the event.
                         this.dispatchEvent(createAppointmentEvent);
-                        this.waiting = false;   
                         this.cancelDialog();    
                     }
                 }).then(val => {
@@ -526,44 +506,8 @@
                 });
             }
 
-            _extractColorFromSelectedService(selectedService) {
-                let domrItem = this.shadowRoot.querySelector(`#${selectedService}`);
-                let color = domrItem.attributes.color.value;
-                console.log('selected service color:', color);
-                return color;
-            }
-
-            _extractModelFromSelectedService(selectedService) {
-                let domrItem = this.shadowRoot.querySelector(`#${selectedService}`);
-                let model = this.$.servicesArray.modelForElement(domrItem);
-                console.log('selected service model:', model.service);
-                return model.service;
-            }
-
-            _resetInputs() {
-                this.employee = null;
-                this.customerName = null;
-                this.customerPhone = null;
-                this.selectedService = null;
-                this.time = null;
-            }
-
-            cancelDialog() {
-                this._resetInputs();
-                this.opened = false;
-            }
-
-            _selectedServiceObserver(selectedService) {
-                this.employee = null;
-                this.$.employeesDomr.render();
-            }
-
-            _isServiceOffered(employee) {
-                return employee.services[this.selectedService];
-            }
-
         }
 
-        window.customElements.define(CreateAppointmentDialog.is, CreateAppointmentDialog);
+        window.customElements.define(ConfirmAppointmentDialog.is, ConfirmAppointmentDialog);
     </script>
 </dom-module>

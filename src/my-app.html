@@ -30,9 +30,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <!-- lazy import dialogs -->
 <link rel="lazy-import" href="dialogs/create-service-dialog.html">
+<link rel="lazy-import" href="dialogs/create-associate-dialog.html">
+<link rel="lazy-import" href="dialogs/create-appointment-dialog.html">
+<link rel="lazy-import" href="dialogs/confirm-appointment-dialog.html">
 
 <!-- extra imports -->
 <link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
 <link rel="import" href="../bower_components/moment-element/moment-element.html">
 <link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
@@ -136,23 +141,42 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         right: 24px;
       }
 
+      .cart-badge {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        width: 20px;
+        height: 20px;
+        background-color: var(--lulu-mothe-purple);
+        border-radius: 50%;
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        pointer-events: none;
+        @apply --layout-vertical;
+        @apply --layout-center-center;
+      }
+
     </style>
 
-    <!-- <firebase-app
+    <firebase-app
       auth-domain="salon-dev-server.firebaseapp.com"
       database-url="https://salon-dev-server.firebaseio.com"
       api-key="AIzaSyAr5cjpG7MH-zOAos8fgBVMlvJn7Q3TpxI"
       storage-bucket="salon-dev-server.appspot.com"
       messaging-sender-id="165378409100">
-    </firebase-app> -->
+    </firebase-app>
 
-    <firebase-app
+    <firebase-document path="mothe"></firebase-document>
+    <firebase-query path="mothe/pendingAppointments" data={{pendingAppts}}></firebase-query>
+
+    <!-- <firebase-app
       auth-domain="salon-bot-7eacc.firebaseapp.com"
       database-url="https://salon-bot-7eacc.firebaseio.com"
       api-key="AIzaSyBHU3AL0ykDXGCD-cKaIYPQ0TfRnP9YQIU"
       storage-bucket="salon-bot-7eacc.appspot.com"
       messaging-sender-id="514905054269">
-    </firebase-app>
+    </firebase-app> -->
 
     <moment-element datetime={{datetime}} hidden="true" output-format="M-D-YYYY" output="{{currentDate}}"></moment-element>
 
@@ -217,7 +241,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             attr-for-selected="name"
             fallback-selection="error"
             role="main">
-          <agenda-view name="agenda" date={{currentDate}}></agenda-view>
+          <agenda-view name="agenda" date={{currentDate}} on-time-header-click="_onTimeHeaderClick"></agenda-view>
           <asociados-view name="asociados"></asociados-view>
           <servicios-view name="servicios"></servicios-view>
           <error-view name="error"></error-view>
@@ -229,7 +253,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <paper-fab icon="my-icons:add" on-click="_onFabClick"></paper-fab>
     </template>
 
-    <create-service-dialog id=createServiceDialog></create-service-dialog>
+    <create-appointment-dialog id=createAppointmentDialog on-create-appointment="_onCreateAppointmentEvent"></create-appointment-dialog>
+    <create-associate-dialog id=createAssociateDialog on-create-associate="_onCreateAssociateEvent"></create-associate-dialog>
+    <create-service-dialog id=createServiceDialog on-create-service="_onCreateServiceEvent"></create-service-dialog>
+    
+    <confirm-appointment-dialog id=confirmAppointmentDialog on-confirm-appointment="_onConfirmAppointmentEvent"></confirm-appointment-dialog>
 
   </template>
 
@@ -377,19 +405,112 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }
       }
 
-      _openCreateApptDialog() {
+      _onTimeHeaderClick(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/create-appointment-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openCreateApptDialog(e.detail),
+          null,
+          true);
+      }
+
+      _onPendingAppointmentSelected(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/confirm-appointment-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openConfirmApptDialog(e.detail.selected),
+          null,
+          true);
+      }
+
+      _openConfirmApptDialog(selected) {
+        let curPending = this.pendingAppts[selected];
+        this.$.confirmAppointmentDialog.aid = curPending.$key;
+        this.$.confirmAppointmentDialog.opened = true;
+      }
+
+      _openCreateApptDialog(time) {
+        if(time) this.$.createAppointmentDialog.time = time;
         this.$.createAppointmentDialog.date = null;
         this.$.createAppointmentDialog.date = this.currentDate;
-        this.$.createAppointmentDialog.open();
+        this.$.createAppointmentDialog.opened = true;
       }
 
       _openCreateAssociateDialog() {
-        this.$.addEmployeeDialog.open();
+        this.$.createAssociateDialog.opened = true;
       }
 
       _openCreateServiceDialog() {
         this.$.createServiceDialog.opened = true;
       }
+
+      _onCreateAppointmentEvent(e) {
+        this.waiting = true;
+        
+        let formattedDate = (e.detail.date).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employee}`).push(e.detail.appointment).then(response => {
+            this.waiting = false;
+            console.log('create appointment success');
+        }).catch(error => {
+            this.waiting = false;
+            console.log('error:', error);
+        });
+      }
+
+      _onDeleteAppointmentEvent(e) {
+        this.waiting = true;
+        let formattedDate = (e.detail.formattedDate).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employeeId}/${e.detail.apptId}`).remove().then(response => {
+            this.waiting = false;
+            console.log('delete appointment success');
+        }).catch(error => {
+            this.waiting = false;
+            console.log('error:', error);
+        });
+
+      }
+
+      _onCreateServiceEvent(e) {
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child('services').push(e.detail.service).then(response => {
+            var updates = {};
+            (e.detail.employee).forEach(singleEmployee => {
+              updates[`/${singleEmployee.key}/services/${e.detail.service.name}`] = singleEmployee.value;
+            });
+            return doc.ref.child('employees').update(updates);
+        }).then(response => {
+            console.log('employees updates successfully');
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+
+      _onCreateAssociateEvent(e) {
+        
+        var storage = firebase.storage();
+        var db = firebase.database();
+        
+        var associateDataRef = db.ref('mothe/employees').push();
+        var storageRef = storage.ref();
+        
+        var uid = associateDataRef.key;
+        let associateImagesRef = storageRef.child(`associateImages/${uid}/${e.detail.image.name}`);
+        
+        associateImagesRef.put(e.detail.image).then(snapshot => {
+          console.log('uploaded image sucessfully:', snapshot);
+          let newEmployee = e.detail.employee;
+          newEmployee['image'] = snapshot.downloadURL;
+          return associateDataRef.set(newEmployee);
+        }).then(snapshot => {
+          console.log('employee created successully:', snapshot);
+        }).catch(err => {
+            console.log('ERROR:', err);
+        });
+      }
+
+      
     }
 
     window.customElements.define(MyApp.is, MyApp);
