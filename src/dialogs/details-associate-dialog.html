@@ -1,0 +1,564 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+
+<!-- <link rel="import" href="../../bower_components/gold-phone-input/gold-phone-input.html"> -->
+
+<dom-module id="details-associate-dialog">
+    <template>
+        <style>
+            :host {
+                display: block
+            }
+
+            #dialog {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                width: 420px;
+                position: fixed;
+                top: 0;
+                right: 0;
+                margin: 0;
+            }
+
+            paper-dialog-scrollable {
+                flex: 1;
+                margin-top: 0;
+                --paper-dialog-scrollable: {
+                    padding: 0;
+                }
+            }
+
+            .services {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                height: 80px;
+                align-items: center;
+            }
+
+            .title {
+                font-size: x-large;
+                text-align: center;
+                padding: 24px;
+                margin: 0;
+
+                text-align: start;
+                flex: 1;
+            }
+            
+            .header {
+                border-bottom: 1px solid rgba(0, 0, 0, 0.8);
+                padding: 0;
+                margin-top: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .data {
+                font-size: large;
+            }
+
+            .container-no-edit {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+
+            .date-time-container b {
+                margin-top: 16px;
+            }
+
+            .main-toolbar {
+                padding: 0 16px;
+                margin-top: 0;
+                background-color: var(--app-primary-color);
+                color: whitesmoke;
+
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+            }
+
+            .image-container {
+                height: 280px;
+                width: 100%;
+                margin-top: 8px;
+                background-color: #ccc;
+            }
+
+            .input-container, .services-container, .schedule-container {
+                padding: 16px 16px;
+            }
+
+            .services-container, .schedule-container {
+                border-top: 1px solid #ccc;
+            }
+
+            .services-title {
+                margin: 8px 0 24px;
+            }
+
+            .single-service {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                align-items: center;
+            }
+
+            .delete-btn {
+                background-color: red;
+                color: whitesmoke;
+            }
+
+            paper-fab {
+                position: relative;
+                left: 80%;
+                top: -35px;
+            }
+
+            .image {
+                height: 100%;
+                width: 100%;
+                object-fit: cover;
+            }
+
+            .main-toolbar paper-button {
+                font-size: 14px;
+            }
+
+            #fileInput {
+                display: none;
+            }
+            
+            /* small screen */
+            @media (max-width: 560px) {
+                #dialog {
+                    width: auto;
+                    position: fixed;
+                    top: 0;
+                    right: 0;
+                    left: 0;
+                    margin: 0;
+                }
+
+                .main-toolbar {
+                    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);        
+                }
+
+                paper-fab {
+                    left: calc(100% - 72px);
+                }
+                
+                .date-time-container {
+                    align-self: flex-start;
+                    flex: 1;
+                }
+
+                .image-container {
+                    height: 67vw;
+                }
+
+                .data {
+                    margin-bottom: 16px;
+                }
+
+                .title {
+                    text-align: start;
+                }
+            }
+        </style>
+
+        <firebase-document path="mothe/employees/{{uid}}" data={{employee}}></firebase-document>
+        <firebase-query path="mothe/services" data={{services}}></firebase-query>
+        <input type="file" accept="image/*" on-change="_onImageUploaded" id="fileInput">
+        <paper-dialog modal id=dialog opened={{opened}}>
+            
+            <app-toolbar class=main-toolbar>
+                <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
+                
+                <template is="dom-if" if={{editState}}>
+                    <div class=title>Editando</div>
+                    <paper-button on-click="_onSubmitTap">Guardar</paper-button>
+                </template>
+                
+                <template is="dom-if" if={{!editState}}>
+                    <div class=title>Detalles</div>
+                    <paper-icon-button icon="my-icons:edit" on-click="_onEditTap"></paper-icon-button>
+                    <paper-icon-button icon="my-icons:delete" on-click="_onEstilistaDeleteClick"></paper-icon-button>
+                </template>
+                
+            </app-toolbar>
+            
+            <paper-dialog-scrollable>
+                <div class=image-container>
+
+                    
+                    <template is="dom-if" if={{!editState}}>
+                        <img class=image src="{{employee.image}}"></img>
+                    </template>
+                    
+                    <template is="dom-if" if={{editState}}>
+                        <img class=image src="{{tmpImage}}"></img>
+                        <paper-fab icon="my-icons:camera" on-click="_onCameraFabClick"></paper-fab>                    
+                    </template>
+                    
+                </div>
+                <div class="input-container">
+                    
+                    <template is="dom-if" if={{editState}}>
+                        <paper-input label="Nombre" value={{tmpFirst}}></paper-input>
+                        <paper-input label="Apellido" value={{tmpLast}}></paper-input>
+                        <paper-input label="Correo electronico" value={{tmpEmail}}></paper-input>
+                        <!-- <gold-phone-input label=Telefono country-code="52" value={{tmpPhone}} maxlength=12></gold-phone-input>     -->
+                    </template>
+
+                    
+                    <template is="dom-if" if={{!editState}}>
+                        <paper-input disabled label="Nombre" value={{employee.firstName}}></paper-input>
+                        <paper-input disabled label="Apellido" value={{employee.lastName}}></paper-input>
+                        <paper-input disabled label="Correo electronico" value={{employee.email}}></paper-input>
+                        <!-- <gold-phone-input disabled label=Telefono country-code="52" value={{employee.phone}} maxlength=12></gold-phone-input>     -->
+                    </template>
+                    
+                    
+                </div>
+
+                <div class=services-container>
+
+                    <div class=services-title>Servicios</div>
+
+                    
+                    <template is="dom-if" if={{!editState}}>    
+                        <template is="dom-repeat" items={{services}} 
+                            as=service>
+                            <div class=single-service>{{service.name}}<paper-toggle-button disabled checked={{_computeServiceData(employee.services.*,service.name)}}></paper-toggle-button></div>
+                        </template>
+                    </template>
+
+                    <template is="dom-if" if={{editState}}>
+                        
+                        <template is="dom-repeat" items={{services}} 
+                            as=service>
+                            <div class=single-service>{{service.name}}<paper-toggle-button on-change="_onServiceChange" checked={{_computeServiceData(tmpServices.*,service.name)}}></paper-toggle-button></div>
+                        </template>
+                    </template>
+                    
+                </div>
+
+                <div class=schedule-container>
+
+                    <div class=services-title>Horas</div>
+
+                    
+                    <template is="dom-if" if={{editState}}>
+                        <div class=single-service>Lunes<paper-toggle-button checked={{tmpSchedule.lunes}}></paper-toggle-button></div>
+                        <div class=single-service>Martes<paper-toggle-button checked={{tmpSchedule.martes}}></paper-toggle-button></div>
+                        <div class=single-service>Miercoles<paper-toggle-button checked={{tmpSchedule.miercoles}}></paper-toggle-button></div>
+                        <div class=single-service>Jueves<paper-toggle-button checked={{tmpSchedule.jueves}}></paper-toggle-button></div>
+                        <div class=single-service>Viernes<paper-toggle-button checked={{tmpSchedule.viernes}}></paper-toggle-button></div>
+                        <div class=single-service>Sabado<paper-toggle-button checked={{tmpSchedule.sabado}}></paper-toggle-button></div>
+                        <div class=single-service>Domingo<paper-toggle-button checked={{tmpSchedule.domingo}}></paper-toggle-button></div>    
+                    </template>
+                    
+                    
+                    <template is="dom-if" if={{!editState}}>
+                        <div class=single-service>Lunes<paper-toggle-button disabled checked={{employee.schedule.lunes}}></paper-toggle-button></div>
+                        <div class=single-service>Martes<paper-toggle-button disabled checked={{employee.schedule.martes}}></paper-toggle-button></div>
+                        <div class=single-service>Miercoles<paper-toggle-button disabled checked={{employee.schedule.miercoles}}></paper-toggle-button></div>
+                        <div class=single-service>Jueves<paper-toggle-button disabled checked={{employee.schedule.jueves}}></paper-toggle-button></div>
+                        <div class=single-service>Viernes<paper-toggle-button disabled checked={{employee.schedule.viernes}}></paper-toggle-button></div>
+                        <div class=single-service>Sabado<paper-toggle-button disabled checked={{employee.schedule.sabado}}></paper-toggle-button></div>
+                        <div class=single-service>Domingo<paper-toggle-button disabled checked={{employee.schedule.domingo}}></paper-toggle-button></div>    
+                    </template>
+                    
+
+                </div>
+
+            </paper-dialog-scrollable>
+
+        </paper-dialog>
+
+        <paper-dialog id=deleteDialog>
+            <h2>BORRAR ASOCIADO</h2>
+            <div>Seguro que quieres borrar al asociado {{employee.firstName}} {{employee.lastName}}?</div>
+            <div class=buttons>
+                
+                <paper-button class=close-btn on-tap=_onDeleteCancelTap>Mejor no</paper-button>
+                <paper-button class=delete-btn on-tap=_onConfirmDeleteTap>Borrar</paper-button>
+                
+            </div>
+        </paper-dialog>
+        
+        <paper-toast class=fit-bottom id="toast"></paper-toast>
+
+    </template>
+
+    <script>
+        /**
+         * `employee-details-dialog` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class DetailsEmployeeDialog extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'details-associate-dialog';
+            }
+
+            static get observers() {
+                return [
+                    '_selectedServiceObserver(selectedService)'
+                ];
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    employee: {
+                        type: Object
+                    },
+                    uid: {
+                        type: String,
+                        notify: true
+                    },
+                    editState: {
+                        type: Boolean,
+                        value: false,
+                        observer: '_onEditStateChange'
+                    },
+
+                    tmpFirst: String,
+                    tmpLast: String,
+                    tmpEmail: String,
+                    tmpPhone: String,
+                    tmpEmail: String,
+                    tmpServices: {
+                        type: Object,
+                        value: {}
+                    },
+                    tmpServices: {
+                        type: Object,
+                        value: {}
+                    },
+                    tmpImage: String,
+                    opened: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    }
+                };
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                // this.$.fileInput.addEventListener('change', e => {
+                //     console.log('image uploaded:', e);
+                // })
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                });
+            }
+
+            cancelDialog() {
+
+                if (this.editState) {
+                    this.editState = false;
+                    return;
+                }
+
+                this.opened = false;
+            }
+
+            _onDeleteCancelTap(e) {
+                this.$.deleteDialog.close();
+            }
+
+            _onConfirmDeleteTap(e) {
+                var deleteEmployeeEvent = new CustomEvent('delete-associate', {detail: this.uid})
+                // Dispatch the event.
+                this.dispatchEvent(deleteEmployeeEvent);
+
+                this.$.deleteDialog.close();
+                this.cancelDialog();
+            }
+
+            _onEditTap(e) {
+                this.editState = true;
+            }
+
+            _onDiscardTap(e) {
+                this.editState = false;
+            }
+
+            _onEditStateChange(editState) {
+                if (editState) {
+                    this._fillTmpValues();
+                } else {
+                    this._clearTmpValues();
+                }
+            }
+
+            _fillTmpValues() {
+                this.tmpFirst = this.employee.firstName;
+                this.tmpLast = this.employee.lastName;
+                this.tmpPhone = this.employee.phone;
+                this.tmpEmail = this.employee.email;
+                this.tmpImage = this.employee.image;
+                this.tmpEmail = this.employee.email;
+
+                // let servicesArray = [];
+                // for (const key in this.employee.services) {
+                //     const singleService = this.employee.services[key];
+                //     servicesArray.push(singleService);
+                // }
+
+                // let scheduleArray = [];
+                // for (const key in this.employee.schedule) {
+                //     const singleSchedule = this.employee.schedule[key];
+                //     scheduleArray.push(singleSchedule);
+                // }
+
+                this.tmpServices = Object.assign({}, this.employee.services);
+                this.tmpSchedule = Object.assign({}, this.employee.schedule);
+            }
+
+            _clearTmpValues() {
+                this.tmpFirst = null;
+                this.tmpLast = null;
+                this.tmpPhone = null;
+                this.tmpEmail = null;
+                this.tmpImage = null;
+                this.tmpEmail = null;
+                this.set('tmpServices', {});               
+                this.set('tmpSchedule', {});               
+            }
+
+            _onSubmitTap(e) {
+                var updatedEmployee = {
+                    firstName: this.tmpFirst,
+                    lastName: this.tmpLast,
+                    displayName: `${this.tmpFirst} ${this.tmpLast}`,
+                    phone: this.tmpPhone,
+                    email: this.tmpEmail,
+                    services: this.tmpServices,
+                    schedule: this.tmpSchedule,
+                    image: this.tmpImage
+                }
+                var editEmployeeEvent = new CustomEvent('update-associate', {detail: {employee: updatedEmployee, uid: this.uid}})
+                // Dispatch the event.
+                this.dispatchEvent(editEmployeeEvent);
+                this.editState = false;
+            }
+
+            _onEstilistaDeleteClick(e) {
+                this.$.deleteDialog.open();
+            }
+
+            _selectedServiceObserver(selectedService) {
+                
+                if (!selectedService) {
+                    return;
+                }
+
+                let index = this.tmpServices.indexOf(this.selectedService);
+                if (index != -1) {
+                    return;
+                }
+                this.push('tmpServices', this.selectedService);
+            }
+
+            _onSingleServiceClick(e) {
+                this.splice('tmpServices', e.model.index, 1);
+            }
+
+            _onCameraFabClick(e) {
+                this.$.fileInput.click();
+            }
+
+            _onImageUploaded(e) {
+                let file = null;
+                let fileList = e.target.files;
+                for (let i = 0; i < fileList.length; i++) {
+                    if (fileList[i].type.match(/^image\//)) {
+                        file = fileList[i];
+                        break;
+                    }
+                }
+
+                if (file !== null) {
+                    let url = URL.createObjectURL(file);
+                    var storage = firebase.storage();
+                    var storageRef = storage.ref();
+                    var associateImagesRef = storageRef.child(`associateImages/${this.uid}/${file.name}`);
+                    
+                    var uploadTask = associateImagesRef.put(file).then(snapshot => {
+                        this.tmpImage = snapshot.downloadURL;
+                    }).catch(err => {
+                        console.log('image unable to be uploaded:', err);
+                    });
+                }
+            }
+
+            _computeServiceData(servicesChange, name) {
+                if (!servicesChange.base) {
+                    return;
+                }
+                return servicesChange.base[name];
+            }
+
+            // _onServiceChange(e) {
+            //     console.log('on service change:', e.model.service.name);
+            //     var doc = Polymer.dom(this.root).querySelector("firebase-document");
+            //     return doc.ref.child(`services/${e.model.service.name}`).set(e.returnValue).then(response => {
+            //         console.log('update service success');
+            //     }).catch(error => {
+            //         console.log('error:', error);
+            //     });
+            // }
+
+            _onServiceChange(e) {
+                this.tmpServices[e.model.service.name] = (!e.model.tmpServices[e.model.service.name]);
+            }
+
+        }
+
+        window.customElements.define(DetailsEmployeeDialog.is, DetailsEmployeeDialog);
+    </script>
+</dom-module>

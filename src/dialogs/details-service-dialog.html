@@ -10,11 +10,12 @@
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
-<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-document.html">
 <link rel="import" href="../../bower_components/paper-swatch-picker/paper-swatch-picker.html">
 <link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 
-<dom-module id="create-service-dialog">
+
+<dom-module id="details-service-dialog">
     <template>
         <style>
             :host {
@@ -77,11 +78,15 @@
                 align-items: center;
             }
 
-            .duration-container, .service-color-container, .sub-service-container {
+            .duration-container, .service-color-container {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 padding: 32px 0 16px;
+            }
+
+            .duration-container {
+                border-bottom: 1px solid #ccc;
             }
 
             .service-color-container paper-input {
@@ -93,10 +98,6 @@
                 --paper-menu-button: {
                     padding: 0;
                 }
-            }
-
-            .duration-container {
-                border-bottom: 1px solid #ccc;
             }
 
             .single-option {
@@ -114,14 +115,17 @@
                 justify-content: center;
             }
 
-            /* tall screen */
+            .delete-btn {
+                background-color: red;
+                color: whitesmoke;
+            }
+            /* small screen */
             @media (min-height: 796px) {
                 
                 #dialog {
                     bottom: 0;
                 }
             }
-
             /* small screen */
             @media (max-width: 560px) {
                 
@@ -146,16 +150,24 @@
         data="{{employees}}">
         </firebase-query>
 
+        <firebase-document
+        id="query"
+        path="/mothe/services/{{sid}}"
+        data="{{service}}">
+        </firebase-document>
+
+
         <paper-dialog modal id=dialog opened={{opened}}>
             <app-toolbar id=toolbar class=main-toolbar>
                 <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
-                <div class=title>Agregar servicio</div>
-                <paper-button on-click="_onCreateAppointmentClick">Guardar</paper-button>
+                <div class=title>Detalles</div>
+                <paper-icon-button icon="my-icons:delete" on-click="_onDeleteServiceClick"></paper-icon-button>
             </app-toolbar>
             <paper-dialog-scrollable>
+
                 <div class=service-color-container>
-                    <paper-input label="Servicio" value={{service}}>     
-                        <paper-swatch-picker slot=suffix column-count=2 color="{{selectedColor}}" color-list='["#EC407A", "#AB47BC", "#2196F3", "#3F51B5", "#009688", "#4CAF50", "#FFA000", "#FF5722", "#795548", "#607D8B"]'></paper-swatch-picker>
+                    <paper-input disabled label="Servicio" value={{service.name}}>     
+                        <paper-swatch-picker slot=suffix column-count=2 color="{{service.color}}" color-list='["#EC407A", "#AB47BC", "#2196F3", "#3F51B5", "#009688", "#4CAF50", "#FFA000", "#FF5722", "#795548", "#607D8B"]'></paper-swatch-picker>
                     </paper-input>
                 </div>
                 
@@ -166,21 +178,20 @@
 
                 <div class=sub-services>
                     
-                    <template is="dom-repeat" items={{options}} 
+                    <template is="dom-repeat" items={{service.options}} 
                         as=option>
 
-                        <div class=single-option on-click=_onSingleOptionClick>{{option}}</div>
+                        <div class=single-option on-click="_onSingleOptionClick">{{option}}</div>
 
                     </template>
                     
                 </div>
                 
-                
                 <div class=duration-container>    
                     <div class=duration-label>Duracion</div>
                     
                     <paper-dropdown-menu label=Duracion dynamic-align no-label-float>
-                        <paper-listbox slot="dropdown-content" attr-for-selected=name selected="{{duration}}">
+                        <paper-listbox slot="dropdown-content" attr-for-selected=name selected="{{service.duration}}">
                             <paper-item name=15>15 min</paper-item>
                             <paper-item name=30>30 min</paper-item>
                             <paper-item name=45>45 min</paper-item>
@@ -197,33 +208,42 @@
                         <template id=employeesArray is="dom-repeat" items={{employees}} 
                             as=employee>
                             
-                            <div class=single-employee>{{employee.displayName}}<paper-toggle-button id$={{employee.$key}}></paper-toggle-button></div>
+                            <div class=single-employee>{{employee.displayName}}<paper-toggle-button disabled id$={{employee.$key}} checked={{_computeServiceData(employee.services.*,service.name)}}></paper-toggle-button></div>
                             
                         </template>
                         
                 </div>
             </paper-dialog-scrollable>
         </paper-dialog>
-        
-        <paper-toast class=fit-bottom id="toast"></paper-toast>
+
+        <paper-dialog id=deleteDialog>
+            <h2>BORRAR SERVICIO</h2>
+            <div>Seguro que quieres borrar al servicio de {{service.name}}?</div>
+            <div class=buttons>
+                
+                <paper-button class=close-btn on-tap=_onDeleteCancelTap>Mejor no</paper-button>
+                <paper-button class=delete-btn on-tap=_onConfirmDeleteTap>Borrar</paper-button>
+                
+            </div>
+        </paper-dialog>
 
     </template>
 
     <script>
         /**
-         * `create-service-dialog` Description
+         * `service-details-dialog` Description
          *
          * @summary ShortDescription.
          * @customElement
          * @polymer
          * @extends {Polymer.Element}
          */
-        class CreateServiceDialog extends Polymer.Element {
+        class DetailsServiceDialog extends Polymer.Element {
             /**
              * String providing the tag name to register the element under.
              */
             static get is() {
-                return 'create-service-dialog';
+                return 'details-service-dialog';
             }
 
             /**
@@ -231,23 +251,19 @@
              */
             static get properties() {
                 return {
-                    service: String,
-                    subService: String,
-                    options: {
-                        type: Array,
-                        value: []
-                    },
-                    duration: String,
-                    selectedColor: {
-                        type: String,
-                        observer: '_onSelectedColorChange'
-                    },
+                    sid: String,
                     opened: {
                         type: Boolean,
                         value: false,
                         notify: true
                     }
                 };
+            }
+
+            static get observers() {
+                return [
+                '_updateToolbarColor(service.color)',
+                ];
             }
 
             /**
@@ -266,8 +282,12 @@
                 super.ready();
 
                 Polymer.RenderStatus.afterNextRender(this, function() {
-                    this.$.toast.fitInto = this.$.dialog; 
+                    
                 });
+            }
+
+            _updateToolbarColor(color) {
+                this.$.toolbar.style.backgroundColor = color;    
             }
 
             cancelDialog() {
@@ -276,93 +296,37 @@
             }
 
             _resetInputs() {
-                this.service = null;
                 this.currentOption = null;
-                this.duration = null;
-                this.set('options', []);
             }
 
-            _checkInputs() {
-                if (!this.selectedColor) {
-                    this.$.toast.text = 'Por favor escoja un color.';
-                    this.$.toast.open();
-                    return false;
-                }
-                
-                if (!this.service) {
-                    this.$.toast.text = 'Por favor escriba el nombre del servicio.';
-                    this.$.toast.open();
-                    return false;
-                }
-
-                if (!this.duration) {
-                    this.$.toast.text = 'Por favor elija la duracion.';
-                    this.$.toast.open();
-                    return false;
-                }
-
-                return true;
-            }
-
-            _onCreateAppointmentClick(e) {
-                
-                if (!this._checkInputs()) {
-                    console.log('null inputs found, returning...');
+            _computeServiceData(servicesChange, name) {
+                if (!servicesChange.base) {
                     return;
                 }
-                
-                let arr = this.$.employeesArray.items;
-                console.log('domr:', arr);
-                
-                var employeeArr = [];
-
-                arr.forEach(employee => {
-                    let key = employee.$key;
-                    let domrItem = this.shadowRoot.querySelector(`#${key}`);
-                    
-                    let attributes = domrItem.attributes;
-                    let checked = (attributes.checked != null);
-                    
-                    console.log('key:', key);
-                    console.log('value:', checked);
-
-                    let singleEmployeeObject = {
-                        key: key,
-                        value: checked
-                    }
-
-                    employeeArr.push(singleEmployeeObject);
-                });
-                
-                
-                console.log('original service:', this.service);
-                let formattedService = (this.service).toLowerCase().replace(/\s+/g, '');
-                console.log('formatted service:', formattedService);
-
-
-                var serviceObject = {
-                    name: formattedService,
-                    duration: this.duration,
-                    color: this.selectedColor
-                }
-
-                if (this.options.length) {
-                    console.log('current options:', this.options);
-                    serviceObject['options'] = this.options;
-                }
-
-                console.log('service object:', serviceObject);
-                console.log('employee service array:', employeeArr);
-                
-                var createServiceEvent = new CustomEvent('create-service', {detail: {service: serviceObject, employee: employeeArr}})
-                // Dispatch the event.
-                this.dispatchEvent(createServiceEvent);
-                this.cancelDialog();
+                return servicesChange.base[name];
             }
 
-            _onSelectedColorChange(color) {
-                console.log('on selected color change:', color);
-                this.$.toolbar.style.backgroundColor = color;
+            _onDeleteServiceClick(e) {
+                this.$.deleteDialog.open();
+            }
+
+            _onDeleteCancelTap(e) {
+                this.$.deleteDialog.close();
+            }
+
+            _onConfirmDeleteTap(e) {
+                var employeeArr = [];
+
+                (this.employees).forEach(employee => {
+                    let key = employee.$key;
+                    employeeArr.push(key);
+                });
+                
+                var deleteServiceEvent = new CustomEvent('delete-service', {detail: {sid: this.sid, employees: employeeArr, serviceName: this.service.name}})
+                // Dispatch the event.
+                this.dispatchEvent(deleteServiceEvent);
+                this.$.deleteDialog.close();
+                this.cancelDialog();
             }
 
             _onAddOptionClick(e) {
@@ -373,18 +337,25 @@
                 }
 
                 let trimmedOption = (this.currentOption).trim();
-                this.push('options', trimmedOption);
+
+                if (this.service.options) {
+                    this.push('service.options', trimmedOption);
+                } else {
+                    this.set('service.options', [trimmedOption]);
+                }
+
                 this.currentOption = null;
-                console.log('updated options:', this.options);
+                console.log('updated options:', this.service.options);    
+                
             }
 
             _onSingleOptionClick(e) {
                 console.log(e.model.option);
-                this.splice('options', e.model.index, 1);
+                e.model.set('option', null);
             }
 
         }
 
-        window.customElements.define(CreateServiceDialog.is, CreateServiceDialog);
+        window.customElements.define(DetailsServiceDialog.is, DetailsServiceDialog);
     </script>
 </dom-module>

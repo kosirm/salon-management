@@ -1,0 +1,119 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="single-service">
+    <template>
+        <style>
+            :host {
+                display: block
+            }
+
+            .container {
+                display: flex;
+                align-items: center;
+                border-bottom: 1px solid #ccc;
+                padding: 8px 16px;
+                height: 78px;
+            }
+
+            .details-container {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+            }
+
+            .duration, .options {
+                font-size: 14px;
+                color: rgba(0, 0, 0, 0.54);
+            }
+
+            .color-indicator {
+                width: 20px;
+                height: 100%;
+                margin-right: 8px;
+            }
+        </style>
+
+        <div class="container">
+            <div id=colorIndicator class=color-indicator></div>
+            <div class=details-container>
+                <div class=name>{{service}}</div>
+                
+                <template is="dom-if" if={{options.length}}>
+                    <div class=options>{{_computeOptionsString(options)}}</div>
+                </template>
+                
+                <div class=duration>{{duration}}min</div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        /**
+         * `single-service` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class SingleService extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'single-service';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    service: String,
+                    duration: String,
+                    color: String,
+                    options: Array
+                };
+            }
+
+            static get observers() {
+                return [
+                '_updateColorIndicator(color)',
+                ];
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+            _updateColorIndicator(color) {
+                this.$.colorIndicator.style.backgroundColor = color;
+            }
+
+            _computeOptionsString(options) {
+                console.log('comopting options string:', options);
+                return options.join(', ');
+                
+            }
+
+        }
+
+        window.customElements.define(SingleService.is, SingleService);
+    </script>
+</dom-module>

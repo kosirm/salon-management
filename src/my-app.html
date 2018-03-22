@@ -28,21 +28,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="lazy-import" href="views/servicios-view/servicios-view.html">
 <link rel="lazy-import" href="views/error-view.html">
 
-<!-- lazy import dialogs -->
+<!-- import sign-in dialog -->
+<link rel="import" href="dialogs/sign-in-dialog.html">
+
+<!-- lazy import rest of dialogs -->
+<link rel="lazy-import" href="dialogs/confirm-appointment-dialog.html">
+<link rel="lazy-import" href="dialogs/create-appointment-dialog.html">
+<link rel="lazy-import" href="dialogs/create-associate-dialog.html">
 <link rel="lazy-import" href="dialogs/create-service-dialog.html">
+<link rel="lazy-import" href="dialogs/details-associate-dialog.html">
+<link rel="lazy-import" href="dialogs/details-service-dialog.html">
+<link rel="lazy-import" href="dialogs/details-appointment-dialog.html">
 
 <!-- extra imports -->
 <link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-document.html">
 <link rel="import" href="../bower_components/moment-element/moment-element.html">
 <link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/neon-animation/web-animations.html">
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
-
-
-
-
 
 <dom-module id="my-app">
   <template>
@@ -72,19 +80,38 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        padding: 0;
       }
 
-      .drawer-list {
-        margin: 0 20px;
+      app-drawer {
+        --app-drawer-width: 310px;
+        --app-drawer-content-container: {
+          box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.20), 0 1px 5px 0 rgba(0, 0, 0, 0.20), 0 0 8px -2px rgba(0, 0, 0, 1.4);
+        }
+
+
+        --app-drawer-scrim-background: none;
       }
 
-      .drawer-list a {
-        display: block;
-        padding: 0 16px;
+      .drawer-icons {
+        margin-right: 32px;
+      }
+
+      .drawer-item {
+        display: flex;
+        align-items: center;
+        padding: 9px;
         text-decoration: none;
         color: var(--app-secondary-color);
         line-height: 40px;
       }
 
-      .drawer-list a.iron-selected {
+      .drawer-item:last-child {
+        border-bottom: 1px solid #ccc;
+      }
+
+      .drawer-item:first-child {
+        border-top: 1px solid #ccc;
+      }
+
+      .drawer-item.iron-selected {
         color: var(--lulu-mothe-purple);
         font-weight: bold;
       }
@@ -136,23 +163,91 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         right: 24px;
       }
 
+      .cart-badge {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        width: 20px;
+        height: 20px;
+        background-color: var(--lulu-mothe-purple);
+        border-radius: 50%;
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        pointer-events: none;
+        @apply --layout-vertical;
+        @apply --layout-center-center;
+      }
+
+      .drawer-toolbar {
+        height: 165px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .profile-container {
+        display: flex;
+        margin: 16px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .profile-picture {
+        height: 96px;
+        width: 96px;
+        background-color: gray;
+        border-radius: 50%;
+        background: #ddd;
+        margin-right: 16px;
+        object-fit: cover;
+      }
+
+      .profile-info {
+        color: black;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        justify-content: space-around;
+      }
+
+      .sign-out-button {
+        color: whitesmoke;
+        background-color: var(--lulu-mothe-purple);
+        font-size: 12px;
+        margin: 16px 0 0;
+      }
+
+      .account-type {
+        font-weight: bold;
+      }
+
+      .version {
+        font-size: small;
+      }
+
     </style>
 
-    <!-- <firebase-app
+    <firebase-app
       auth-domain="salon-dev-server.firebaseapp.com"
       database-url="https://salon-dev-server.firebaseio.com"
       api-key="AIzaSyAr5cjpG7MH-zOAos8fgBVMlvJn7Q3TpxI"
       storage-bucket="salon-dev-server.appspot.com"
       messaging-sender-id="165378409100">
-    </firebase-app> -->
+    </firebase-app>
 
-    <firebase-app
+    <!-- <firebase-app
       auth-domain="salon-bot-7eacc.firebaseapp.com"
       database-url="https://salon-bot-7eacc.firebaseio.com"
       api-key="AIzaSyBHU3AL0ykDXGCD-cKaIYPQ0TfRnP9YQIU"
       storage-bucket="salon-bot-7eacc.appspot.com"
       messaging-sender-id="514905054269">
-    </firebase-app>
+    </firebase-app> -->
+
+    <firebase-auth id="auth" user="{{user}}" signed-in={{signedIn}} on-user-changed="_onUserChanged">
+    </firebase-auth>
+
+    <firebase-document path="mothe"></firebase-document>
+    <firebase-query path="mothe/pendingAppointments" data={{pendingAppts}}></firebase-query>
 
     <moment-element datetime={{datetime}} hidden="true" output-format="M-D-YYYY" output="{{currentDate}}"></moment-element>
 
@@ -171,11 +266,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <app-drawer-layout fullbleed force-narrow>
       <!-- Drawer content -->
       <app-drawer id="drawer" slot="drawer" swipe-open opened={{drawerOpen}}>
-        <app-toolbar>Menu</app-toolbar>
+        <app-toolbar class=drawer-toolbar>
+          <div class=profile-container>            
+            <img src="{{user.photoURL}}" class="profile-picture"></img>
+            <div class=profile-info>
+              <div>{{user.displayName}}</div>
+              <div>{{user.email}}</div>
+              <div class=account-type>{{accountType}}</div>
+              <paper-button class=sign-out-button on-click="_onSignOutButtonClick">Cerrar sesion</paper-button>
+            </div>
+          </div>  
+          <div class=version>v1.0.2</div>
+        </app-toolbar>
         <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
-          <a name="agenda" href="[[rootPath]]agenda">Agenda</a>
-          <a name="asociados" href="[[rootPath]]asociados">Asociados</a>
-          <a name="servicios" href="[[rootPath]]servicios">Servicios</a>
+          <a name="agenda" class="drawer-item" href="[[rootPath]]agenda"><iron-icon class=drawer-icons icon="my-icons:calendar"></iron-icon>Agenda</a>
+          <a name="asociados" class$={{_computeIsDrawerItemHidden(accountType)}} href="[[rootPath]]asociados"><iron-icon class=drawer-icons icon="my-icons:employees"></iron-icon>Asociados</a>
+          <a name="servicios" class="drawer-item" href="[[rootPath]]servicios"><iron-icon class=drawer-icons icon="my-icons:services"></iron-icon>Servicios</a>
         </iron-selector>
       </app-drawer>
 
@@ -217,9 +323,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             attr-for-selected="name"
             fallback-selection="error"
             role="main">
-          <agenda-view name="agenda" date={{currentDate}}></agenda-view>
-          <asociados-view name="asociados"></asociados-view>
-          <servicios-view name="servicios"></servicios-view>
+          <agenda-view name="agenda" date={{currentDate}} on-time-header-click="_onTimeHeaderClick" on-appt-click="_onApptClick"></agenda-view>
+          <asociados-view name="asociados" on-associate-click="_onAssociateClick"></asociados-view>
+          <servicios-view name="servicios" on-service-click="_onServiceClick"></servicios-view>
           <error-view name="error"></error-view>
         </iron-pages>
       </app-header-layout>
@@ -229,7 +335,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <paper-fab icon="my-icons:add" on-click="_onFabClick"></paper-fab>
     </template>
 
-    <create-service-dialog id=createServiceDialog></create-service-dialog>
+    <sign-in-dialog id=signInDialog on-sign-in="_onSignInEvent" opened={{!signedIn}}></sign-in-dialog>
+
+    <create-appointment-dialog id=createAppointmentDialog on-create-appointment="_onCreateAppointmentEvent"></create-appointment-dialog>
+    <create-associate-dialog id=createAssociateDialog on-create-associate="_onCreateAssociateEvent"></create-associate-dialog>
+    <create-service-dialog id=createServiceDialog on-create-service="_onCreateServiceEvent"></create-service-dialog>
+    
+    <details-associate-dialog id=associateDetailsDialog on-update-associate="_onUpdateAssociate" on-delete-associate="_onDeleteAssociate"></details-associate-dialog>
+    <details-service-dialog id=serviceDetailsDialog on-update-service="_onUpdateService" on-delete-service="_onDeleteService"></details-service-dialog>
+    <details-appointment-dialog id=appointmentDetailsDialog on-delete-appointment="_onDeleteAppointment"></details-appointment-dialog>
+
+    <confirm-appointment-dialog id=confirmAppointmentDialog on-confirm-appointment="_onConfirmAppointment"></confirm-appointment-dialog>
 
   </template>
 
@@ -304,6 +420,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if (accountType != 'admin') return 'hidden';
       }
 
+      _computeIsDrawerItemHidden(accountType) {
+        if (accountType != 'admin') return 'hidden';
+        return "drawer-item";
+      }
+
       _computeCurrentDate(currentDate, page) {
           if (page == 'asociados') {
             return 'Asociados'
@@ -342,6 +463,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       _onFabClick(e) {
+        console.log('fab click:', e);
+        
         var resolvedDialogUrl;
         switch (this.page) {
           case 'agenda':
@@ -377,19 +500,308 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }
       }
 
-      _openCreateApptDialog() {
+      _openCreateApptDialog(time) {
+        if(time) this.$.createAppointmentDialog.time = time;
         this.$.createAppointmentDialog.date = null;
         this.$.createAppointmentDialog.date = this.currentDate;
-        this.$.createAppointmentDialog.open();
+        this.$.createAppointmentDialog.opened = true;
       }
 
       _openCreateAssociateDialog() {
-        this.$.addEmployeeDialog.open();
+        this.$.createAssociateDialog.opened = true;
       }
 
       _openCreateServiceDialog() {
         this.$.createServiceDialog.opened = true;
       }
+
+      _onTimeHeaderClick(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/create-appointment-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openCreateApptDialog(e.detail),
+          null,
+          true);
+      }
+
+      _onPendingAppointmentSelected(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/confirm-appointment-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openConfirmApptDialog(e.detail.selected),
+          null,
+          true);
+      }
+      _openConfirmApptDialog(selected) {
+        let curPending = this.pendingAppts[selected];
+        this.$.confirmAppointmentDialog.aid = curPending.$key;
+        this.$.confirmAppointmentDialog.opened = true;
+      }
+
+      _onAssociateClick(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/details-associate-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openAssociateDetailsDialog(e.detail),
+          null,
+          true);
+      }
+
+      _onServiceClick(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/details-service-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openServiceDetailsDialog(e.detail),
+          null,
+          true);
+      }
+      _onApptClick(e) {
+        let resolvedDialogUrl = this.resolveUrl('dialogs/details-appointment-dialog.html');
+        Polymer.importHref(
+          resolvedDialogUrl,
+          this._openApptDetailsDialog(e.detail),
+          null,
+          true);
+      }
+
+      _openApptDetailsDialog(appt) {
+        let formattedDate = (appt.date).replace(/\//g, '-');
+        this.$.appointmentDetailsDialog.date = formattedDate;  
+        this.$.appointmentDetailsDialog.uid = appt.employee;  
+        this.$.appointmentDetailsDialog.aid = appt.id;  
+        this.$.appointmentDetailsDialog.opened = true;  
+      }
+
+      _openAssociateDetailsDialog(uid) {
+        console.log('on associate details open:', uid);
+        
+        this.$.associateDetailsDialog.uid = uid;
+        this.$.associateDetailsDialog.opened = true;
+      }
+
+      _openServiceDetailsDialog(sid) {
+        console.log('on service details open:', sid);
+        
+        this.$.serviceDetailsDialog.sid = sid;
+        this.$.serviceDetailsDialog.opened = true;
+      }
+
+      _onCreateAppointmentEvent(e) {
+        this.waiting = true;
+        
+        let formattedDate = (e.detail.date).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employee}`).push(e.detail.appointment).then(response => {
+            this.waiting = false;
+            console.log('create appointment success');
+        }).catch(error => {
+            this.waiting = false;
+            console.log('error:', error);
+        });
+      }
+      _onDeleteAppointmentEvent(e) {
+        this.waiting = true;
+        let formattedDate = (e.detail.formattedDate).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employeeId}/${e.detail.apptId}`).remove().then(response => {
+            this.waiting = false;
+            console.log('delete appointment success');
+        }).catch(error => {
+            this.waiting = false;
+            console.log('error:', error);
+        });
+      }
+      _onCreateServiceEvent(e) {
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child('services').push(e.detail.service).then(response => {
+            var updates = {};
+            (e.detail.employee).forEach(singleEmployee => {
+              updates[`/${singleEmployee.key}/services/${e.detail.service.name}`] = singleEmployee.value;
+            });
+            return doc.ref.child('employees').update(updates);
+        }).then(response => {
+            console.log('employees updates successfully');
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+      _onCreateAssociateEvent(e) {
+        
+        var storage = firebase.storage();
+        var db = firebase.database();
+        
+        var associateDataRef = db.ref('mothe/employees').push();
+        var storageRef = storage.ref();
+        
+        var uid = associateDataRef.key;
+        let associateImagesRef = storageRef.child(`associateImages/${uid}/${e.detail.image.name}`);
+        
+        associateImagesRef.put(e.detail.image).then(snapshot => {
+          console.log('uploaded image sucessfully:', snapshot);
+          let newEmployee = e.detail.employee;
+          newEmployee['image'] = snapshot.downloadURL;
+          return associateDataRef.set(newEmployee);
+        }).then(snapshot => {
+          console.log('employee created successully:', snapshot);
+        }).catch(err => {
+            console.log('ERROR:', err);
+        });
+      }
+
+      _onUpdateAssociate(e) {
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        var updatedEmployee = e.detail.employee;
+        
+        Object.keys(updatedEmployee).forEach(key => {
+          if(updatedEmployee[key] === undefined) updatedEmployee[key] = null;
+        });
+        
+        return doc.ref.child(`employees/${e.detail.uid}`).update(updatedEmployee).then(response => {
+            console.log('edit employee success');
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+
+      _onDeleteAssociate(e) {
+        
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`employees/${e.detail}`).remove().then(response => {
+            console.log('delete employee success');
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+
+      _onDeleteService(e) {
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`services/${e.detail.sid}`).remove().then(response => {
+            var updates = {};
+            (e.detail.employees).forEach(singleEmployee => {
+              updates[`/${singleEmployee}/services/${e.detail.serviceName}`] = null;
+            });
+            return doc.ref.child('employees').update(updates);
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+
+      _onConfirmAppointment(e) {
+        let formattedDate = (e.detail.date).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employee}/${e.detail.aid}`).set(e.detail.appointment).then(response => {
+            this.waiting = false;
+            return doc.ref.child(`pendingAppointments/${e.detail.aid}`).remove();
+        }).then(response => {
+            console.log('pending appt deleted successfully');
+        }).catch(error => {
+            console.log('error:', error);
+        });
+      }
+
+      _onDeleteAppointment(e) {
+        this.waiting = true;
+        let formattedDate = (e.detail.formattedDate).replace(/\//g, '-');
+        var doc = Polymer.dom(this.root).querySelector("firebase-document");
+        return doc.ref.child(`appointments/${formattedDate}/${e.detail.employeeId}/${e.detail.apptId}`).remove().then(response => {
+            this.waiting = false;
+            console.log('delete appointment success');
+        }).catch(error => {
+            this.waiting = false;
+            console.log('error:', error);
+        });
+      }
+
+      _onSignInEvent(e) {
+        console.log('on sign in event:', e.detail);
+        let i = e.detail;
+        this.$.auth.signInWithEmailAndPassword(i.e, i.p).then(response => {
+          console.log('sign in successful:', response);
+          
+        }).catch(err => {
+          console.log('sign in error:', err);
+          
+          this.$.signInDialog.handleError(err);
+        });
+      }
+
+      _onSignOutButtonClick(e) {
+        this.$.drawer.close();
+        this.signOut();
+      }
+
+      signOut() {
+        this.accountType = null;
+        this.$.auth.signOut();
+      }
+
+      _onUserChanged(e) {
+        console.log('-----------------user changed--------------------:', e.detail.value)
+        let user = e.detail.value;
+
+        if (user) {
+          return user.getIdToken().then(idToken => {
+            console.log('user id token:', idToken);
+            
+            const payload = JSON.parse(this.b64DecodeUnicode(idToken.split('.')[1]));
+            console.log('payload:', payload)
+
+            if (payload['admin']) {
+              console.log('ADMIN LOGGED IN')
+              this.showAdminUI();
+            } else if (payload['associate']) {
+              console.log('ASSOCIATE LOGGED IN')
+              this.showAssociateUI();
+            } else {
+              console.log('UNAUTHORIZED USER')
+            }
+          }).catch(err => {
+            console.log(err);
+            return user.getIdToken().then(idToken => {
+              const payload = (this.b64DecodeUnicode((idToken.split('.')[1]).split('_')[1]));
+              console.log('payload:', payload)
+
+              if (payload.indexOf('"admin":true') !== -1) {
+                console.log('ADMIN LOGGED IN')
+                this.showAdminUI();
+              } else if (payload.indexOf('"associate":true') !== -1) {
+                console.log('ASSOCIATE LOGGED IN')
+                this.showAssociateUI();
+              } else {
+                console.log('UNAUTHORIZED USER')
+                this.signOut();
+              }
+            }).catch(err => {
+              console.log('fallback err:', err);  
+            });
+          });
+        }
+      }
+
+      showAdminUI() {
+        this.accountType = 'admin'
+      }
+
+      showAssociateUI() {
+        this.accountType = 'associate'
+
+        console.log('route data:', this.routeData);
+        console.log('route:', this.route);
+        
+
+        if (this.page == 'estilistas') {
+          this.set('routeData.page', 'agenda');
+        }
+      }
+
+      b64DecodeUnicode(str) {
+          // Going backwards: from bytestream, to percent-encoding, to original string.
+          return decodeURIComponent(atob(str).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+      }
+
+
     }
 
     window.customElements.define(MyApp.is, MyApp);

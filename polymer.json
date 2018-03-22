@@ -5,7 +5,14 @@
     "src/views/agenda-view/agenda-view.html",
     "src/views/asociados-view/asociados-view.html",
     "src/views/servicios-view/servicios-view.html",
-    "src/views/error-view.html"
+    "src/views/error-view.html",
+    "src/dialogs/confirm-appointment-dialog.html",
+    "src/dialogs/create-appointment-dialog.html",
+    "src/dialogs/create-associate-dialog.html",
+    "src/dialogs/create-service-dialog.html",
+    "src/dialogs/details-appointment-dialog.html",
+    "src/dialogs/details-associate-dialog.html",
+    "src/dialogs/details-service-dialog.html"
   ],
   "sources": [
     "images/**/*",
@@ -21,7 +28,10 @@
   },
   "builds": [
     {
-      "preset": "es6-bundled"
+      "preset": "es6-bundled",
+      "js": {
+        "compile": false
+      }
     }
   ]
 }

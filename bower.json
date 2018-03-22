@@ -28,7 +28,9 @@
     "paper-input": "PolymerElements/paper-input#^2.2.0",
     "paper-toast": "PolymerElements/paper-toast#^2.1.0",
     "paper-swatch-picker": "PolymerElements/paper-swatch-picker#^2.2.0",
-    "paper-fab": "PolymerElements/paper-fab#^2.1.0"
+    "paper-fab": "PolymerElements/paper-fab#^2.1.0",
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#^2.1.0",
+    "paper-spinner": "PolymerElements/paper-spinner#^2.1.0"
   },
   "resolutions": {
     "polymer": "^2.0.0"

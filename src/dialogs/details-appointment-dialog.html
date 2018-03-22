@@ -1,0 +1,290 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<!-- <link rel="import" href="../../bower_components/gold-phone-input/gold-phone-input.html"> -->
+
+<dom-module id="details-appointment-dialog">
+    <template>
+        <style>
+            :host {
+                display: block
+            }
+
+            #dialog {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                width: 420px;
+                position: fixed;
+                top: 0;
+                right: 0;
+                margin: 0;
+            }
+
+            .main-toolbar {
+                margin-top: 0;
+                padding: 0 16px;
+                background-color: var(--app-primary-color);
+                color: whitesmoke;
+
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+            }
+
+            .title {
+                font-size: x-large;
+                text-align: center;
+                padding: 24px;
+                margin: 0;
+
+                text-align: start;
+                flex: 1;
+            }
+
+            paper-dialog-scrollable {
+                flex: 1;
+                margin-top: 0;
+            }
+
+            paper-dropdown-menu {
+                width: 100%;
+            }
+
+            .submit-button {
+                color: whitesmoke;
+                background-color: red;
+            }
+
+            .cancel-button {
+                color: red;
+            }
+
+            .service-input, .date-time-container {
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+            }
+
+            .date-time-container paper-dropdown-menu {
+                flex: 1;
+                margin: 4px;
+                --paper-input-container-input-disabled: {
+                    color: #000;
+                };
+                --paper-input-container-disabled: {
+                    color: #000;
+                };
+
+
+                --paper-dropdown-menu-disabled: {
+                    color: #000;
+                };
+            }
+
+            .date-time-container div {
+                text-align: center;
+                padding-top: 20px;
+            }
+
+            paper-textarea {
+                --paper-input-container-underline: {
+                    display: none;
+                }
+                --paper-input-container-underline-focus: {
+                    display: none;
+                }
+
+                --paper-input-container: {
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    padding: 8px;
+                    height: 140px;
+                }
+
+            }
+
+
+
+            /* large screen */
+            @media (min-width: 561px) {
+                
+                paper-dropdown-menu {
+                    width: 100%;
+                }
+            }
+            /* small screen */
+            @media (max-width: 560px) {
+                
+                #dialog {
+                    width: auto;
+                    position: fixed;
+                    top: 0;
+                    right: 0;
+                    left: 0;
+                    margin: 0;
+                }
+
+            }
+            
+            /* small screen */
+            @media (min-height: 566px) {
+                #dialog {
+                    bottom: 0;
+                }
+            }
+
+        </style>
+        
+        <firebase-document
+            id="query"
+            path="/mothe/appointments/{{date}}/{{uid}}/{{aid}}"
+            data="{{appointment}}">
+        </firebase-document>
+
+        <paper-dialog id=dialog opened={{opened}}>
+            <app-toolbar class=main-toolbar>
+                <paper-icon-button icon="my-icons:arrow-back" on-click="cancelDialog"></paper-icon-button>
+                <div class=title>Cita</div>
+                <paper-icon-button icon="my-icons:delete" on-click="_onDeleteAppointmentClick"></paper-icon-button>
+            </app-toolbar>
+
+            <paper-dialog-scrollable>
+
+                <div class="date-time-container">
+                    <paper-dropdown-menu disabled label=Date dynamic-align>
+                        <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{appointment.formattedDate}}>
+                            <paper-item name$={{appointment.formattedDate}}>{{appointment.formattedDate}}</paper-item>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                    <paper-dropdown-menu disabled label=Hora dynamic-align>
+                        <paper-listbox attr-for-item-title=name attr-for-selected="name" slot="dropdown-content" selected={{appointment.time}}>
+                            <paper-item name$={{appointment.time}}>{{appointment.time}}</paper-item>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>
+                <paper-input label="Nombre del cliente" value={{appointment.customerName}}></paper-input>
+                <!-- <gold-phone-input label=Telefono country-code="52" value={{appointment.phone}} maxlength=12></gold-phone-input> -->
+                <paper-dropdown-menu disabled label=Servicio dynamic-align>
+                    <paper-listbox attr-for-selected=name slot="dropdown-content" selected={{appointment.service}}>
+                        <paper-item name$={{appointment.service}}>{{appointment.service}}</paper-item>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+                <paper-dropdown-menu disabled label=Empleados dynamic-align>
+                    <paper-listbox attr-for-selected=name selected={{appointment.employeeName}} slot="dropdown-content">
+                        <paper-item name$={{appointment.employeeName}}>{{appointment.employeeName}}</paper-item>
+                    </paper-listbox>
+                </paper-dropdown-menu>
+            <paper-textarea no-label-float label="Notas" value={{appointment.notes}}></paper-textarea>
+        </paper-dialog-scrollable>
+        </paper-dialog>
+
+        <paper-toast class=fit-bottom id="toast"></paper-toast>
+
+        <paper-dialog id=deleteDialog>
+            <div class=title>CANCELAR CITA</div>
+            <div class=text>¿Seguro que deseas cancelar esta cita para {{appointment.customerName}}?</div>
+
+            <div class="buttons">
+                <paper-button on-click="cancelDialog">Mejor no</paper-button>
+                <paper-button class=submit-button on-click="_onConfirmDeleteAppointmentClick">Borrar</paper-button>
+            </div>
+        </paper-dialog>
+
+        
+
+    </template>
+
+    <script>
+        /**
+         * `appointment-details-dialog` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class DetailsAppointmentDialog extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'details-appointment-dialog';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    date: String,
+                    uid: String,
+                    aid: String,
+                    opened: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    }
+                };
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+            cancelDialog() {
+                this.opened = false;
+            }
+
+            _onDeleteAppointmentClick(e) {
+                this.$.deleteDialog.open();
+            }
+
+            _onConfirmDeleteAppointmentClick(e) {
+                console.log('on confirm delete appointment click:', e);
+                
+                let appointmentObject = this.appointment;
+                appointmentObject["employeeId"] = this.uid;
+                appointmentObject["apptId"] = this.aid;
+
+                var deleteAppointmentEvent = new CustomEvent('delete-appointment', {detail: appointmentObject})
+                // Dispatch the event.
+                this.dispatchEvent(deleteAppointmentEvent);
+                this.$.deleteDialog.close();
+                this.cancelDialog();
+            }
+
+        }
+
+        window.customElements.define(DetailsAppointmentDialog.is, DetailsAppointmentDialog);
+    </script>
+</dom-module>

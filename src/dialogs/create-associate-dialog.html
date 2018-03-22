@@ -12,12 +12,7 @@
 <link rel="import" href="../../bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
-
-<!-- <link rel="import" href="../../bower_components/gold-phone-input/gold-phone-input.html"> -->
-<!-- <link rel="import" href="../../bower_components/d2l-checkbox/d2l-checkbox.html"> -->
-<!-- <link rel="import" href="../../bower_components/iron-image/iron-image.html"> -->
-
-
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 
 <dom-module id="create-associate-dialog">
     <template>
@@ -112,7 +107,11 @@
             .image {
                 height: 100%;
                 width: 100%;
-                object-fit: cover;
+                object-fit: contain;
+            }
+
+            #fileInput {
+                display: none;
             }
 
             /* small screen */
@@ -154,7 +153,7 @@
 
         <input type="file" accept="image/*" on-change="_onImageUploaded" id="fileInput">
         <firebase-query path="mothe/services" data={{servicesData}}></firebase-query>
-        <paper-dialog modal id=dialog>
+        <paper-dialog modal id=dialog opened={{opened}}>
             
             
             <app-toolbar class=main-toolbar>
@@ -182,7 +181,7 @@
                     
                     <template is="dom-repeat" items={{servicesData}} 
                     as=service>
-                        <div class=single-service>{{service.name}}<d2l-checkbox on-change="_onServiceChange" checked={{_computeServiceData(services.*,service.name)}}></d2l-checkbox></div>
+                        <div class=single-service>{{service.name}}<paper-toggle-button on-change="_onServiceChange" checked={{_computeServiceData(services.*,service.name)}}></paper-toggle-button></div>
                     </template>
                 </div>
 
@@ -190,13 +189,13 @@
 
                     <div class=services-title>Horas</div>
                     
-                    <div class=single-service>Lunes<d2l-checkbox checked={{schedule.lunes}}></d2l-checkbox></div>
-                    <div class=single-service>Martes<d2l-checkbox checked={{schedule.martes}}></d2l-checkbox></div>
-                    <div class=single-service>Miercoles<d2l-checkbox checked={{schedule.miercoles}}></d2l-checkbox></div>
-                    <div class=single-service>Jueves<d2l-checkbox checked={{schedule.jueves}}></d2l-checkbox></div>
-                    <div class=single-service>Viernes<d2l-checkbox checked={{schedule.viernes}}></d2l-checkbox></div>
-                    <div class=single-service>Sabado<d2l-checkbox checked={{schedule.sabado}}></d2l-checkbox></div>
-                    <div class=single-service>Domingo<d2l-checkbox checked={{schedule.domingo}}></d2l-checkbox></div>
+                    <div class=single-service>Lunes<paper-toggle-button checked={{schedule.lunes}}></paper-toggle-button></div>
+                    <div class=single-service>Martes<paper-toggle-button checked={{schedule.martes}}></paper-toggle-button></div>
+                    <div class=single-service>Miercoles<paper-toggle-button checked={{schedule.miercoles}}></paper-toggle-button></div>
+                    <div class=single-service>Jueves<paper-toggle-button checked={{schedule.jueves}}></paper-toggle-button></div>
+                    <div class=single-service>Viernes<paper-toggle-button checked={{schedule.viernes}}></paper-toggle-button></div>
+                    <div class=single-service>Sabado<paper-toggle-button checked={{schedule.sabado}}></paper-toggle-button></div>
+                    <div class=single-service>Domingo<paper-toggle-button checked={{schedule.domingo}}></paper-toggle-button></div>
                 </div>
             </paper-dialog-scrollable>
         </paper-dialog>
@@ -246,6 +245,11 @@
                     waiting: {
                         type: Boolean,
                         value: false
+                    },
+                    opened: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
                     }
                 };
             }
@@ -259,11 +263,6 @@
                 super();
             }
 
-            static get observers() {
-                return [
-                ];
-            }
-
             /**
              * Use for one-time configuration of your component after local DOM is initialized. 
              */
@@ -271,13 +270,8 @@
                 super.ready();
 
                 Polymer.RenderStatus.afterNextRender(this, function() {
-                    this.$.toast.fitInto = this.$.dialog
-                    ;
+                    this.$.toast.fitInto = this.$.dialog;
                 });
-            }
-
-            open() {
-                this.$.dialog.open();
             }
 
             _checkNullInputs() {
@@ -294,10 +288,6 @@
                     return true;
                 } else if (!this.lastName) {
                     this.$.toast.text = 'Por favor escriba el apellido del empleado.';
-                    this.$.toast.open();
-                    return true;
-                } else if (!this.phone) {
-                    this.$.toast.text = 'Por favor escriba un telefono.';
                     this.$.toast.open();
                     return true;
                 } else if (!this.email) {
@@ -334,12 +324,15 @@
                     displayName: displayName,
                     services: this.services,
                     schedule: this.schedule,
-                    phone: this.phone,
                     email: trimmedEmail
+                }
+
+                if (this.phone) {
+                    employeeObject['phone'] = this.phone;
                 }
                 
                 
-                var createEmployeeEvent = new CustomEvent('create-employee', {detail: {employee: employeeObject, image: this.imageFile}})
+                var createEmployeeEvent = new CustomEvent('create-associate', {detail: {employee: employeeObject, image: this.imageFile}})
                 // Dispatch the event.
                 this.dispatchEvent(createEmployeeEvent);
                 this.waiting = false;
@@ -359,7 +352,7 @@
 
             cancelDialog() {
                 this._resetInputs();
-                this.$.dialog.close();
+                this.opened = false;
             }
 
             _onCameraFabClick(e) {
@@ -367,6 +360,7 @@
             }
 
             _onImageUploaded(e) {
+                console.log('on image upload:', e.target.files)
                 let file = null;
                 let fileList = e.target.files;
                 for (let i = 0; i < fileList.length; i++) {
@@ -375,6 +369,9 @@
                         break;
                     }
                 }
+
+                console.log('current file:', file);
+                
 
                 if (file !== null) {
                     let url = URL.createObjectURL(file);

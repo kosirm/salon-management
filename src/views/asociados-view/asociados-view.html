@@ -1,4 +1,6 @@
 <link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="single-associate.html">
 
 <dom-module id="asociados-view">
     <template>
@@ -8,7 +10,19 @@
             }
         </style>
 
-        
+        <firebase-query
+        id="query"
+        path="/mothe/employees"
+        data="{{employees}}">
+        </firebase-query>
+
+
+        <template is="dom-repeat" items={{employees}} 
+            as=employee>
+            
+            <single-associate on-click="_onAssociateClick" thumbnail={{employee.image}} first-name={{employee.firstName}} last-name={{employee.lastName}} phone={{employee.phone}}></single-associate>
+
+        </template>
 
     </template>
 
@@ -49,6 +63,14 @@
                 Polymer.RenderStatus.afterNextRender(this, function() {
                     
                 });
+            }
+
+            _onAssociateClick(e) {
+                console.log('associate click:', e.model.employee.$key);
+                
+                var openEmployeeDetails = new CustomEvent('associate-click', {detail: e.model.employee.$key})
+                // Dispatch the event.
+                this.dispatchEvent(openEmployeeDetails);
             }
 
         }

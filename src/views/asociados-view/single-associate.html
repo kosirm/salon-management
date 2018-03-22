@@ -1,0 +1,103 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="single-associate">
+    <template>
+        <style>
+            :host {
+                display: block
+            }
+            .circle {
+                display: inline-block;
+                width: 40px;
+                height: 40px;
+                text-align: center;
+                color: #555;
+                border-radius: 50%;
+                background: #ddd;
+                font-size: 30px;
+                line-height: 64px;
+                margin: 24px 16px;
+                object-fit: cover;
+            }
+
+            .container {
+                display: flex;
+                align-items: center;
+                border-bottom: 1px solid #ccc;
+            }
+
+            .details-container {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+            }
+
+            .phone {
+                font-size: 14px;
+            }
+        </style>
+
+        <div class="container">
+            <img class=circle src="{{thumbnail}}" preload sizing="cover"></img>
+            <div class=details-container>
+                <div class=name>{{firstName}} {{lastName}}</div>
+                <div class=phone>{{phone}}</div>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        /**
+         * `single-estilista` Description
+         *
+         * @summary ShortDescription.
+         * @customElement
+         * @polymer
+         * @extends {Polymer.Element}
+         */
+        class SingleAssociate extends Polymer.Element {
+            /**
+             * String providing the tag name to register the element under.
+             */
+            static get is() {
+                return 'single-associate';
+            }
+
+            /**
+             * Object describing property-related metadata used by Polymer features
+             */
+            static get properties() {
+                return {
+                    firstName: String,
+                    lastName: String,
+                    phone: String,
+                    thumbnail: String
+                };
+            }
+
+            /**
+             * Instance of the element is created/upgraded. Use: initializing state,
+             * set up event listeners, create shadow dom.
+             * @constructor
+             */
+            constructor() {
+                super();
+            }
+
+            /**
+             * Use for one-time configuration of your component after local DOM is initialized. 
+             */
+            ready() {
+                super.ready();
+
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    
+                });
+            }
+
+        }
+
+        window.customElements.define(SingleAssociate.is, SingleAssociate);
+    </script>
+</dom-module>

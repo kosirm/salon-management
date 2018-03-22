@@ -1,4 +1,6 @@
 <link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="single-service.html">
 
 <dom-module id="servicios-view">
     <template>
@@ -8,7 +10,16 @@
             }
         </style>
 
-        
+        <firebase-query
+        id="query"
+        path="/mothe/services"
+        data="{{services}}">
+        </firebase-query>
+
+        <template is="dom-repeat" items={{services}} 
+        as=service>
+            <single-service on-click="_onSingleServiceClick" options={{service.options}} color={{service.color}} service={{service.name}} duration={{service.duration}}></single-service>
+        </template>
 
     </template>
 
@@ -49,6 +60,12 @@
                 Polymer.RenderStatus.afterNextRender(this, function() {
                     
                 });
+            }
+
+            _onSingleServiceClick(e) {
+                var openServiceDetails = new CustomEvent('service-click', {detail: e.model.service.$key})
+                // Dispatch the event.
+                this.dispatchEvent(openServiceDetails);
             }
 
         }
